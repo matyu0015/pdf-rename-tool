@@ -54,19 +54,11 @@ document.getElementById('pdfFiles').addEventListener('change', async (e) => {
     showStatus('pdfStatus', `${files.length}件のPDFを処理中...`, 'success');
 
     for (const file of files) {
-        // PDFデータを読み込み、コピーを作成して保持
-        const arrayBuffer = await file.arrayBuffer();
-        // Uint8Arrayに変換してからコピーを作成（detachedを防ぐ）
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const dataForDownload = new Uint8Array(uint8Array);  // ダウンロード用のコピー
-        const dataForPreview = new Uint8Array(uint8Array);   // プレビュー用のコピー
-
         const pdf = {
             file: file,
             originalName: file.name,
             newName: '',
-            data: dataForDownload,  // ダウンロード用データ
-            previewData: dataForPreview  // プレビュー用データ
+            data: null  // 後で設定
         };
 
         pdfData.push(pdf);
@@ -140,15 +132,19 @@ async function renderPdfItem(pdf, index) {
 
     pdfListDiv.appendChild(itemDiv);
 
-    // PDFのプレビューをレンダリング（プレビュー用データを使用）
-    await renderPdfPreview(pdf.previewData, canvas);
+    // PDFのプレビューをレンダリング（Fileオブジェクトから直接読み込み）
+    await renderPdfPreview(pdf.file, canvas);
 }
 
 // PDFプレビューのレンダリング
-async function renderPdfPreview(pdfDataBytes, canvas) {
+async function renderPdfPreview(file, canvas) {
     try {
+        // Fileオブジェクトから新しいArrayBufferを読み込む
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+
         const loadingTask = pdfjsLib.getDocument({
-            data: pdfDataBytes,
+            data: uint8Array,
             cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
             cMapPacked: true
         });
@@ -211,12 +207,13 @@ function updateDownloadButton(index) {
 }
 
 // 単一PDFのダウンロード
-function downloadSinglePdf(index) {
+async function downloadSinglePdf(index) {
     const pdf = pdfData[index];
     if (!pdf.newName) return;
 
-    // Uint8Arrayを使用してBlobを作成
-    const blob = new Blob([pdf.data], { type: 'application/pdf' });
+    // Fileオブジェクトから新しいArrayBufferを読み込む
+    const arrayBuffer = await pdf.file.arrayBuffer();
+    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -226,7 +223,7 @@ function downloadSinglePdf(index) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log(`ダウンロード: ${a.download}, サイズ: ${pdf.data.byteLength} bytes`);
+    console.log(`ダウンロード: ${a.download}, サイズ: ${arrayBuffer.byteLength} bytes`);
 }
 
 // 全PDFのZIPダウンロード
@@ -234,15 +231,17 @@ document.getElementById('downloadAll').addEventListener('click', async () => {
     const zip = new JSZip();
     let addedCount = 0;
 
-    pdfData.forEach((pdf) => {
+    // 各PDFファイルを処理
+    for (const pdf of pdfData) {
         if (pdf.newName) {
             const fileName = pdf.newName.endsWith('.pdf') ? pdf.newName : `${pdf.newName}.pdf`;
-            // Uint8Arrayを使用してZIPに追加
-            zip.file(fileName, pdf.data);
+            // Fileオブジェクトから新しいArrayBufferを読み込む
+            const arrayBuffer = await pdf.file.arrayBuffer();
+            zip.file(fileName, arrayBuffer);
             addedCount++;
-            console.log(`ZIP追加: ${fileName}, サイズ: ${pdf.data.byteLength} bytes`);
+            console.log(`ZIP追加: ${fileName}, サイズ: ${arrayBuffer.byteLength} bytes`);
         }
-    });
+    }
 
     if (addedCount === 0) {
         alert('ダウンロードするPDFがありません。各PDFに新しい名前を選択してください。');
