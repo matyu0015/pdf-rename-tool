@@ -54,15 +54,19 @@ document.getElementById('pdfFiles').addEventListener('change', async (e) => {
     showStatus('pdfStatus', `${files.length}件のPDFを処理中...`, 'success');
 
     for (const file of files) {
-        // PDFデータを保存
+        // PDFデータを読み込み、コピーを作成して保持
         const arrayBuffer = await file.arrayBuffer();
+        // Uint8Arrayに変換してからコピーを作成（detachedを防ぐ）
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const dataForDownload = new Uint8Array(uint8Array);  // ダウンロード用のコピー
+        const dataForPreview = new Uint8Array(uint8Array);   // プレビュー用のコピー
 
         const pdf = {
             file: file,
             originalName: file.name,
             newName: '',
-            arrayBuffer: arrayBuffer,  // ArrayBufferを保持
-            data: new Uint8Array(arrayBuffer)  // Uint8Arrayも保持
+            data: dataForDownload,  // ダウンロード用データ
+            previewData: dataForPreview  // プレビュー用データ
         };
 
         pdfData.push(pdf);
@@ -136,8 +140,8 @@ async function renderPdfItem(pdf, index) {
 
     pdfListDiv.appendChild(itemDiv);
 
-    // PDFのプレビューをレンダリング
-    await renderPdfPreview(pdf.data, canvas);
+    // PDFのプレビューをレンダリング（プレビュー用データを使用）
+    await renderPdfPreview(pdf.previewData, canvas);
 }
 
 // PDFプレビューのレンダリング
@@ -211,8 +215,8 @@ function downloadSinglePdf(index) {
     const pdf = pdfData[index];
     if (!pdf.newName) return;
 
-    // ArrayBufferを使用してBlobを作成
-    const blob = new Blob([pdf.arrayBuffer], { type: 'application/pdf' });
+    // Uint8Arrayを使用してBlobを作成
+    const blob = new Blob([pdf.data], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -222,7 +226,7 @@ function downloadSinglePdf(index) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log(`ダウンロード: ${a.download}, サイズ: ${pdf.arrayBuffer.byteLength} bytes`);
+    console.log(`ダウンロード: ${a.download}, サイズ: ${pdf.data.byteLength} bytes`);
 }
 
 // 全PDFのZIPダウンロード
@@ -233,10 +237,10 @@ document.getElementById('downloadAll').addEventListener('click', async () => {
     pdfData.forEach((pdf) => {
         if (pdf.newName) {
             const fileName = pdf.newName.endsWith('.pdf') ? pdf.newName : `${pdf.newName}.pdf`;
-            // ArrayBufferを使用してZIPに追加
-            zip.file(fileName, pdf.arrayBuffer);
+            // Uint8Arrayを使用してZIPに追加
+            zip.file(fileName, pdf.data);
             addedCount++;
-            console.log(`ZIP追加: ${fileName}, サイズ: ${pdf.arrayBuffer.byteLength} bytes`);
+            console.log(`ZIP追加: ${fileName}, サイズ: ${pdf.data.byteLength} bytes`);
         }
     });
 
