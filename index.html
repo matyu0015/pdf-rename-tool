@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF名前変更ツール</title>
+    <title>PDF名前変更用サイト</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>PDF名前変更ツール</h1>
-        <p class="subtitle">PDFを見ながら簡単に名前を変更できます（すべてブラウザ内で処理、データは保存されません）</p>
+        <h1>PDF名前変更用サイト</h1>
+        <p class="subtitle">中身を見ながら並行して保存名を変えられるよ 📄✨</p>
 
         <div class="upload-section">
             <div class="upload-box">
-                <h2>1. エクセルファイルをアップロード</h2>
+                <h2>1. エクセルファイルをアップロード 📊</h2>
                 <p class="description">A列に新しいファイル名のリストを入力したエクセルファイルをアップロードしてください</p>
                 <input type="file" id="excelFile" accept=".xlsx,.xls" />
                 <div id="excelStatus" class="status"></div>
@@ -21,8 +21,8 @@
             </div>
 
             <div class="upload-box">
-                <h2>2. PDFファイルをアップロード</h2>
-                <p class="description">名前を変更したいPDFファイルを選択してください（複数選択可）</p>
+                <h2>2. PDFファイルをアップロード 📁</h2>
+                <p class="description">名前を変更したいPDFファイルを選択してください（複数選択可） 🔍</p>
                 <input type="file" id="pdfFiles" accept=".pdf" multiple />
                 <div id="pdfStatus" class="status"></div>
             </div>
@@ -31,7 +31,7 @@
         <div id="pdfList" class="pdf-list"></div>
 
         <div id="downloadSection" class="download-section" style="display: none;">
-            <button id="downloadAll" class="btn btn-primary">すべてのPDFをZIPでダウンロード</button>
+            <button id="downloadAll" class="btn btn-primary">すべてのPDFをZIPでダウンロード 💾</button>
         </div>
     </div>
 
