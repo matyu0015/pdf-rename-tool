@@ -3,35 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF名前変更用サイト</title>
+    <title>便利ツール集</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <h1>PDF名前変更用サイト</h1>
-        <p class="subtitle">中身を見ながら並行して保存名を変えられるよ 📄✨</p>
+        <h1>便利ツール集 🛠️</h1>
+        <p class="subtitle">必要な機能をタブから選んで使ってね ✨</p>
 
-        <div class="upload-section">
-            <div class="upload-box">
-                <h2>1. エクセルファイルをアップロード 📊</h2>
-                <p class="description">A列に新しいファイル名のリストを入力したエクセルファイルをアップロードしてください</p>
-                <input type="file" id="excelFile" accept=".xlsx,.xls" />
-                <div id="excelStatus" class="status"></div>
-                <div id="nameList" class="name-list"></div>
+        <!-- タブナビゲーション -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchMainTab('pdf-rename')">📄 PDF名前変更</button>
+            <button class="tab-btn" onclick="switchMainTab('schedule')">🐼 日程整理</button>
+            <button class="tab-btn" onclick="switchMainTab('coming-soon')">🚀 準備中</button>
+        </div>
+
+        <!-- タブ1: PDF名前変更 -->
+        <div id="tab-pdf-rename" class="tab-content active">
+            <div class="upload-section">
+                <div class="upload-box">
+                    <h2>1. エクセルファイルをアップロード 📊</h2>
+                    <p class="description">A列に新しいファイル名のリストを入力したエクセルファイルをアップロードしてください</p>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" />
+                    <div id="excelStatus" class="status"></div>
+                    <div id="nameList" class="name-list"></div>
+                </div>
+
+                <div class="upload-box">
+                    <h2>2. PDFファイルをアップロード 📁</h2>
+                    <p class="description">名前を変更したいPDFファイルを選択してください（複数選択可） 🔍</p>
+                    <input type="file" id="pdfFiles" accept=".pdf" multiple />
+                    <div id="pdfStatus" class="status"></div>
+                </div>
             </div>
 
-            <div class="upload-box">
-                <h2>2. PDFファイルをアップロード 📁</h2>
-                <p class="description">名前を変更したいPDFファイルを選択してください（複数選択可） 🔍</p>
-                <input type="file" id="pdfFiles" accept=".pdf" multiple />
-                <div id="pdfStatus" class="status"></div>
+            <div id="pdfList" class="pdf-list"></div>
+
+            <div id="downloadSection" class="download-section" style="display: none;">
+                <button id="downloadAll" class="btn btn-primary">すべてのPDFをZIPでダウンロード 💾</button>
             </div>
         </div>
 
-        <div id="pdfList" class="pdf-list"></div>
+        <!-- タブ2: 日程整理 -->
+        <div id="tab-schedule" class="tab-content">
+            <!-- 日程テキスト入力 -->
+            <div class="card">
+                <h2>🍊 日程入力</h2>
+                <div class="tab-row">
+                    <button class="tab-btn-sub active" onclick="switchSubTab('text')">📝 テキスト貼り付け</button>
+                    <button class="tab-btn-sub" onclick="switchSubTab('excel')">📂 Excelファイル取り込み</button>
+                </div>
 
-        <div id="downloadSection" class="download-section" style="display: none;">
-            <button id="downloadAll" class="btn btn-primary">すべてのPDFをZIPでダウンロード 💾</button>
+                <!-- テキスト入力タブ -->
+                <div id="tab-text" class="tab-panel active">
+                    <label>お客さんから来た日程をぺと</label>
+                    <textarea id="dateInput" rows="8" placeholder="例：
+2026年3月10日（月）、3月12日（水）、3月15日（土）
+3/10、3/12、3/15
+2026-03-10, 2026-03-12
+令和8年3月10日
+3月10日 10:00〜18:00、3月12日 9:00〜17:00"></textarea>
+                    <p class="note">対応形式：「X月Y日」「X/Y」「YYYY-MM-DD」「令和/平成 + 年月日」など混在していてもOK</p>
+                </div>
+
+                <!-- Excelタブ -->
+                <div id="tab-excel" class="tab-panel">
+                    <div class="upload-area" id="uploadArea" onclick="document.getElementById('scheduleExcelFile').click()"
+                         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+                        <input type="file" id="scheduleExcelFile" accept=".xlsx,.xls,.csv" onchange="onFileSelect(event)">
+                        <div class="upload-icon">🐼📂</div>
+                        <div class="upload-text"><strong>クリックしてファイルを選択</strong>、またはここにドラッグ&ドロップ</div>
+                        <div class="upload-text" style="margin-top:4px;font-size:12px;color:#9ca3af;">.xlsx / .xls / .csv に対応</div>
+                    </div>
+                    <div class="upload-result" id="uploadResult"></div>
+                    <p class="note">取り込んだデータはテキスト欄に反映されます。内容を確認・編集してから解析してください。</p>
+                </div>
+            </div>
+
+            <!-- 基本設定 -->
+            <div class="card">
+                <h2>🍞 基本設定</h2>
+                <div class="row">
+                    <div class="field">
+                        <label>対象年（省略時に使用）</label>
+                        <input type="number" id="defaultYear" min="2020" max="2040" style="width:90px">
+                    </div>
+                    <div class="field">
+                        <label>締め切り：実施日の何営業日前？</label>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <input type="number" id="businessDaysBefore" value="3" min="0" max="30">
+                            <span class="unit">営業日前</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- カレンダープレビュー -->
+                <div id="calendarWrap">
+                    <div class="cal-legend">
+                        <span style="font-size:12px;font-weight:600;color:#444;">凡例：</span>
+                        <span class="cal-legend-item"><span class="cal-legend-dot legend-selected"></span>入力済み日程</span>
+                        <span class="cal-legend-item"><span class="cal-legend-dot legend-holiday"></span>祝日</span>
+                        <span class="cal-legend-item"><span class="legend-sat">土</span> 土曜</span>
+                        <span class="cal-legend-item"><span class="legend-sun">日</span> 日曜</span>
+                    </div>
+                    <div class="cal-grid" id="calGrid"></div>
+                </div>
+            </div>
+
+            <!-- 時間スロット設定（任意） -->
+            <div class="card">
+                <h2>🍇 時間スロット設定（任意）</h2>
+                <div class="toggle-row">
+                    <label class="toggle">
+                        <input type="checkbox" id="enableSlot" onchange="toggleSlot(this)">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label">時間スロットを自動生成する</span>
+                </div>
+                <div id="slotSection" class="section-sub">
+                    <div class="row">
+                        <div class="field">
+                            <label>対応可能開始時刻</label>
+                            <input type="time" id="slotStart" value="09:00">
+                        </div>
+                        <div class="field">
+                            <label>対応可能終了時刻</label>
+                            <input type="time" id="slotEnd" value="18:00">
+                        </div>
+                        <div class="field">
+                            <label>所要時間（分）</label>
+                            <input type="number" id="duration" value="60" min="5" max="480" style="width:80px">
+                        </div>
+                        <div class="field">
+                            <label>インターバル（分）</label>
+                            <input type="number" id="interval" value="0" min="0" max="120" style="width:80px">
+                        </div>
+                    </div>
+                    <p class="note" style="margin-top:8px">※ テキストに「10:00〜18:00」など時間範囲が含まれる場合はその範囲を優先します</p>
+                </div>
+            </div>
+
+            <!-- 実行ボタン -->
+            <button class="btn-primary" onclick="processSchedule()">🐼 日程を解析してExcelを生成</button>
+
+            <!-- 結果 -->
+            <div class="card" id="resultCard" style="display:none">
+                <h2>🌈 解析結果プレビュー</h2>
+                <div id="alertBox" class="alert" style="display:none"></div>
+                <div class="result-table-wrap">
+                    <table id="resultTable">
+                        <thead id="resultHead"></thead>
+                        <tbody id="resultBody"></tbody>
+                    </table>
+                </div>
+                <button class="btn-dl" onclick="downloadExcel()">🍓 Excelダウンロード (.xlsx)</button>
+            </div>
+        </div>
+
+        <!-- タブ3: 準備中 -->
+        <div id="tab-coming-soon" class="tab-content">
+            <div class="coming-soon-message">
+                <div class="coming-soon-icon">🚀</div>
+                <h2>新機能準備中</h2>
+                <p>近日公開予定です。お楽しみに！</p>
+            </div>
         </div>
     </div>
 

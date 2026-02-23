@@ -248,6 +248,539 @@ input[type="file"]:hover {
     border-radius: 12px;
 }
 
+/* タブナビゲーション */
+.tab-navigation {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 30px;
+    border-bottom: 3px solid #e5e7eb;
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    font-size: 1em;
+    font-weight: 600;
+    color: #888;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -3px;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.tab-btn:hover {
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* 準備中メッセージ */
+.coming-soon-message {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.coming-soon-icon {
+    font-size: 5em;
+    margin-bottom: 20px;
+}
+
+.coming-soon-message h2 {
+    color: #667eea;
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.coming-soon-message p {
+    color: #666;
+    font-size: 1.1em;
+}
+
+/* 日程整理機能のスタイル */
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card h2 {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 14px;
+    border-left: 3px solid #667eea;
+    padding-left: 10px;
+}
+
+label {
+    display: block;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 6px;
+}
+
+textarea {
+    width: 100%;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.95em;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+textarea:focus {
+    border-color: #667eea;
+}
+
+input[type="number"],
+input[type="time"] {
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.95em;
+    outline: none;
+    width: 80px;
+    transition: border-color 0.2s;
+}
+
+input[type="number"]:focus,
+input[type="time"]:focus {
+    border-color: #667eea;
+}
+
+.row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.field-wide {
+    flex: 1;
+    min-width: 160px;
+}
+
+.toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.toggle-label {
+    font-size: 0.95em;
+    font-weight: 500;
+    color: #555;
+}
+
+.toggle {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    display: inline-block;
+}
+
+.toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ccc;
+    border-radius: 22px;
+    transition: 0.2s;
+}
+
+.slider:before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.2s;
+}
+
+input:checked + .slider {
+    background: #667eea;
+}
+
+input:checked + .slider:before {
+    transform: translateX(18px);
+}
+
+.section-sub {
+    display: none;
+    padding: 14px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 4px;
+}
+
+.section-sub.active {
+    display: block;
+}
+
+.result-table-wrap {
+    overflow-x: auto;
+    margin-top: 12px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+}
+
+th {
+    background: #f0f2ff;
+    color: #667eea;
+    font-weight: 600;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid #bfdbfe;
+}
+
+td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+tr:hover td {
+    background: #f8faff;
+}
+
+.badge {
+    display: inline-block;
+    font-size: 0.75em;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
+.badge-red {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.btn-dl {
+    background: #059669;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 14px;
+}
+
+.btn-dl:hover {
+    background: #047857;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+}
+
+.alert {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.9em;
+    color: #92400e;
+    margin-top: 8px;
+}
+
+.note {
+    font-size: 0.85em;
+    color: #9ca3af;
+    margin-top: 6px;
+}
+
+.unit {
+    font-size: 0.95em;
+    color: #555;
+}
+
+/* Excelアップロード */
+.upload-area {
+    border: 2px dashed #bfdbfe;
+    border-radius: 8px;
+    padding: 18px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    margin-bottom: 10px;
+    background: #f8faff;
+}
+
+.upload-area:hover,
+.upload-area.dragover {
+    background: #eff6ff;
+    border-color: #667eea;
+}
+
+.upload-area input[type="file"] {
+    display: none;
+}
+
+.upload-icon {
+    font-size: 1.8em;
+    margin-bottom: 6px;
+}
+
+.upload-text {
+    font-size: 0.9em;
+    color: #555;
+}
+
+.upload-text strong {
+    color: #667eea;
+}
+
+.upload-result {
+    font-size: 0.85em;
+    color: #059669;
+    margin-top: 6px;
+    font-weight: 500;
+    min-height: 18px;
+}
+
+.tab-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.tab-btn-sub {
+    padding: 7px 18px;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #888;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn-sub.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* カレンダー */
+#calendarWrap {
+    display: none;
+    margin-top: 18px;
+}
+
+#calendarWrap.active {
+    display: block;
+}
+
+.cal-legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    font-size: 0.85em;
+    color: #555;
+    align-items: center;
+}
+
+.cal-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.cal-legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-selected {
+    background: #667eea;
+}
+
+.legend-holiday {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+}
+
+.legend-sat {
+    color: #1d4ed8;
+    font-weight: 700;
+    font-size: 0.95em;
+}
+
+.legend-sun {
+    color: #b91c1c;
+    font-weight: 700;
+    font-size: 0.95em;
+}
+
+.cal-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+}
+
+.cal-month {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    min-width: 196px;
+}
+
+.cal-month-title {
+    background: #f0f2ff;
+    color: #667eea;
+    font-size: 0.95em;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #bfdbfe;
+}
+
+.cal-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.cal-table th {
+    font-size: 0.75em;
+    font-weight: 600;
+    padding: 4px 0;
+    text-align: center;
+    background: none;
+    border: none;
+    color: #555;
+}
+
+.cal-table th.sun {
+    color: #b91c1c;
+}
+
+.cal-table th.sat {
+    color: #1d4ed8;
+}
+
+.cal-table td {
+    width: 28px;
+    height: 26px;
+    text-align: center;
+    font-size: 0.85em;
+    padding: 0;
+    border: none;
+    position: relative;
+}
+
+.cal-table td.empty {
+    background: none;
+}
+
+.cal-day {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    position: relative;
+}
+
+.cal-day.sun {
+    color: #b91c1c;
+}
+
+.cal-day.sat {
+    color: #1d4ed8;
+}
+
+.cal-day.holiday {
+    color: #b91c1c;
+}
+
+.cal-day.selected {
+    background: #667eea;
+    color: white !important;
+    font-weight: 700;
+}
+
+.cal-day.holiday-bg:not(.selected) {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.holiday-dot {
+    position: absolute;
+    bottom: 1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ef4444;
+}
+
+.cal-day.selected .holiday-dot {
+    background: white;
+}
+
 @media (max-width: 768px) {
     .upload-section {
         grid-template-columns: 1fr;
@@ -272,5 +805,16 @@ input[type="file"]:hover {
 
     .pdf-controls select {
         width: 100%;
+    }
+
+    .tab-navigation {
+        flex-wrap: wrap;
+    }
+
+    .tab-btn {
+        flex: 1;
+        min-width: 120px;
+        font-size: 0.9em;
+        padding: 10px 16px;
     }
 }
