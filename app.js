@@ -1113,3 +1113,312 @@ function updateTableDisplay() {
         renderTable(currentData, nBefore, mergeStartTime, mergeDeadlineTime, deadlineTime);
     }
 }
+
+// ===== 一括テキスト置換機能 =====
+
+// グローバル変数（テキスト置換機能）
+let replaceWorkbook = null;
+let replaceCells = [];
+let currentCellIndex = 0;
+let selectedSheetName = '';
+let editMode = 'placeholder'; // 'placeholder' または 'full'
+
+// エクセルファイルのアップロード処理
+document.getElementById('replaceExcelFile')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+        const data = await file.arrayBuffer();
+        replaceWorkbook = XLSX.read(data);
+
+        // シート名のリストを作成
+        const sheetSelect = document.getElementById('sheetSelect');
+        sheetSelect.innerHTML = '';
+        replaceWorkbook.SheetNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            sheetSelect.appendChild(option);
+        });
+
+        document.getElementById('replaceExcelStatus').textContent = `✓ ファイルを読み込みました（${replaceWorkbook.SheetNames.length}シート）`;
+        document.getElementById('replaceExcelStatus').className = 'status success';
+        document.getElementById('sheetSelectionSection').style.display = 'block';
+
+    } catch (error) {
+        document.getElementById('replaceExcelStatus').textContent = 'エラー: ' + error.message;
+        document.getElementById('replaceExcelStatus').className = 'status error';
+    }
+});
+
+// セル範囲を読み込む
+function loadCellsForReplacement() {
+    console.log('=== loadCellsForReplacement 開始 ===');
+
+    if (!replaceWorkbook) {
+        alert('先にエクセルファイルをアップロードしてください');
+        return;
+    }
+
+    // 編集モードを取得
+    const modeRadio = document.querySelector('input[name="editMode"]:checked');
+    editMode = modeRadio ? modeRadio.value : 'placeholder';
+    console.log('編集モード:', editMode);
+
+    selectedSheetName = document.getElementById('sheetSelect').value;
+    const column = document.getElementById('targetColumn').value.trim().toUpperCase();
+    const startRow = parseInt(document.getElementById('startRow').value);
+    const endRow = parseInt(document.getElementById('endRow').value);
+
+    console.log('シート:', selectedSheetName);
+    console.log('列:', column);
+    console.log('開始行:', startRow);
+    console.log('終了行:', endRow);
+
+    if (!column || isNaN(startRow) || isNaN(endRow)) {
+        alert('対象列、開始行、終了行を入力してください');
+        return;
+    }
+
+    if (startRow > endRow) {
+        alert('開始行は終了行以下である必要があります');
+        return;
+    }
+
+    // 列と行から開始セルと終了セルを構築
+    const startCell = `${column}${startRow}`;
+    const endCell = `${column}${endRow}`;
+    console.log('セル範囲:', startCell, 'から', endCell);
+
+    try {
+        const sheet = replaceWorkbook.Sheets[selectedSheetName];
+        const startRef = XLSX.utils.decode_cell(startCell);
+        const endRef = XLSX.utils.decode_cell(endCell);
+        console.log('startRef:', startRef);
+        console.log('endRef:', endRef);
+
+        replaceCells = [];
+
+        // セル範囲を走査
+        for (let R = startRef.r; R <= endRef.r; R++) {
+            for (let C = startRef.c; C <= endRef.c; C++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                const cell = sheet[cellAddress];
+                if (cell && cell.v) {
+                    const content = String(cell.v);
+
+                    // モードに応じて対象セルを選択
+                    if (editMode === 'placeholder') {
+                        // プレースホルダーがあるセルのみ
+                        if (content.includes('{{') && content.includes('}}')) {
+                            replaceCells.push({
+                                address: cellAddress,
+                                originalContent: content,
+                                currentContent: content,
+                                row: R,
+                                col: C
+                            });
+                        }
+                    } else {
+                        // 全体編集モード：すべてのセルを対象
+                        replaceCells.push({
+                            address: cellAddress,
+                            originalContent: content,
+                            currentContent: content,
+                            row: R,
+                            col: C
+                        });
+                    }
+                }
+            }
+        }
+
+        console.log('抽出されたセル数:', replaceCells.length);
+
+        if (replaceCells.length === 0) {
+            const message = editMode === 'placeholder'
+                ? '指定範囲にプレースホルダー（{{...}}）が見つかりませんでした'
+                : '指定範囲にセルが見つかりませんでした';
+            alert(message);
+            return;
+        }
+
+        currentCellIndex = 0;
+        console.log('replacementSectionを表示します');
+        document.getElementById('replacementSection').style.display = 'block';
+        console.log('showCurrentCell()を呼び出します');
+        showCurrentCell();
+
+    } catch (error) {
+        alert('セル範囲の読み込みエラー: ' + error.message);
+    }
+}
+
+// 現在のセルを表示
+function showCurrentCell() {
+    console.log('=== showCurrentCell 開始 ===');
+    console.log('currentCellIndex:', currentCellIndex);
+    console.log('replaceCells.length:', replaceCells.length);
+
+    if (currentCellIndex >= replaceCells.length) {
+        // すべて完了
+        console.log('すべて完了しました');
+        document.getElementById('replacementSection').style.display = 'none';
+        document.getElementById('downloadReplacedSection').style.display = 'block';
+        return;
+    }
+
+    const cell = replaceCells[currentCellIndex];
+    console.log('現在のセル:', cell);
+
+    document.getElementById('replacementProgress').textContent =
+        `進捗: ${currentCellIndex + 1} / ${replaceCells.length}`;
+    document.getElementById('currentCellAddress').textContent = cell.address;
+    document.getElementById('currentCellContent').textContent = cell.currentContent;
+
+    const inputsDiv = document.getElementById('placeholderInputs');
+    inputsDiv.innerHTML = '';
+
+    console.log('編集モード:', editMode);
+
+    if (editMode === 'placeholder') {
+        // プレースホルダー置換モード
+        const placeholders = extractPlaceholders(cell.currentContent);
+        console.log('抽出されたプレースホルダー:', placeholders);
+
+        if (placeholders.length === 0) {
+            inputsDiv.innerHTML = '<p style="color: #999;">プレースホルダーが見つかりません</p>';
+            return;
+        }
+
+        placeholders.forEach((ph, index) => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.style.marginBottom = '10px';
+
+            const label = document.createElement('label');
+            label.textContent = ph;
+            label.style.display = 'block';
+            label.style.marginBottom = '5px';
+            label.style.fontWeight = '600';
+            label.style.color = '#667eea';
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = `placeholder-input-${index}`;
+            input.dataset.placeholder = ph;
+            input.placeholder = `${ph}の置換後の値を入力`;
+            input.style.width = '100%';
+            input.style.padding = '8px';
+            input.style.border = '2px solid #ddd';
+            input.style.borderRadius = '6px';
+
+            fieldDiv.appendChild(label);
+            fieldDiv.appendChild(input);
+            inputsDiv.appendChild(fieldDiv);
+        });
+    } else {
+        // 全体編集モード
+        const label = document.createElement('label');
+        label.textContent = '新しい内容を入力してください';
+        label.style.display = 'block';
+        label.style.marginBottom = '5px';
+        label.style.fontWeight = '600';
+        label.style.color = '#667eea';
+
+        const textarea = document.createElement('textarea');
+        textarea.id = 'full-edit-textarea';
+        textarea.value = cell.currentContent;
+        textarea.rows = 10;
+        textarea.style.width = '100%';
+        textarea.style.padding = '10px';
+        textarea.style.border = '2px solid #ddd';
+        textarea.style.borderRadius = '6px';
+        textarea.style.fontFamily = 'inherit';
+        textarea.style.fontSize = '0.9em';
+
+        inputsDiv.appendChild(label);
+        inputsDiv.appendChild(textarea);
+    }
+}
+
+// プレースホルダーを抽出
+function extractPlaceholders(text) {
+    const regex = /\{\{([^}]+)\}\}/g;
+    const placeholders = [];
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+        const fullMatch = match[0]; // {{...}} 全体
+        if (!placeholders.includes(fullMatch)) {
+            placeholders.push(fullMatch);
+        }
+    }
+    return placeholders;
+}
+
+// 現在のセルをスキップ
+function skipCurrentCell() {
+    currentCellIndex++;
+    showCurrentCell();
+}
+
+// 置換して次へ
+function replaceAndNext() {
+    const cell = replaceCells[currentCellIndex];
+    let newContent = cell.currentContent;
+
+    if (editMode === 'placeholder') {
+        // プレースホルダー置換モード
+        const inputs = document.querySelectorAll('[id^="placeholder-input-"]');
+        inputs.forEach(input => {
+            const placeholder = input.dataset.placeholder;
+            const value = input.value.trim();
+            if (value) {
+                // プレースホルダーを置換
+                newContent = newContent.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
+            }
+        });
+    } else {
+        // 全体編集モード
+        const textarea = document.getElementById('full-edit-textarea');
+        if (textarea) {
+            newContent = textarea.value;
+        }
+    }
+
+    // セル内容を更新
+    cell.currentContent = newContent;
+
+    currentCellIndex++;
+    showCurrentCell();
+}
+
+// 置換後のエクセルをダウンロード
+function downloadReplacedExcel() {
+    if (!replaceWorkbook) return;
+
+    const sheet = replaceWorkbook.Sheets[selectedSheetName];
+
+    // 置換内容を適用
+    replaceCells.forEach(cell => {
+        const cellRef = XLSX.utils.encode_cell({ r: cell.row, c: cell.col });
+        if (sheet[cellRef]) {
+            sheet[cellRef].v = cell.currentContent;
+            sheet[cellRef].t = 's'; // 文字列型
+        }
+    });
+
+    // エクセルファイルを生成
+    const wbout = XLSX.write(replaceWorkbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+
+    // ダウンロード
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `置換済み_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}

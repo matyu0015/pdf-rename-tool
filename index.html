@@ -203,12 +203,86 @@
             </div>
         </div>
 
-        <!-- タブ3: 準備中 -->
+        <!-- タブ3: 一括テキスト置換 -->
         <div id="tab-coming-soon" class="tab-content">
-            <div class="coming-soon-message">
-                <div class="coming-soon-icon">🚀</div>
-                <h2>新機能準備中</h2>
-                <p>近日公開予定です。お楽しみに！</p>
+            <div class="card">
+                <h2>📝 一括テキスト置換ツール</h2>
+                <p class="description">エクセル内のプレースホルダー（{{日時}}、{{ZOOM_URL}}など）を一括で置換できます</p>
+
+                <!-- ステップ1: ファイルアップロード -->
+                <div class="upload-section" style="grid-template-columns: 1fr; margin-bottom: 20px;">
+                    <div class="upload-box">
+                        <h3 style="font-size: 1em; margin-bottom: 10px;">1. エクセルファイルをアップロード 📊</h3>
+                        <input type="file" id="replaceExcelFile" accept=".xlsx,.xls" />
+                        <div id="replaceExcelStatus" class="status"></div>
+                    </div>
+                </div>
+
+                <!-- ステップ2: シートと行の選択 -->
+                <div id="sheetSelectionSection" style="display: none; margin-bottom: 20px;">
+                    <h3 style="font-size: 1em; margin-bottom: 10px;">2. シートと行を選択</h3>
+                    <div class="row">
+                        <div class="field">
+                            <label>シート名</label>
+                            <select id="sheetSelect" style="width: 200px; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>対象列（例: A）</label>
+                            <input type="text" id="targetColumn" placeholder="A" value="A" style="width: 80px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-transform: uppercase;">
+                        </div>
+                        <div class="field">
+                            <label>開始行（例: 2）</label>
+                            <input type="number" id="startRow" placeholder="2" value="2" min="1" style="width: 80px; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+                        </div>
+                        <div class="field">
+                            <label>終了行（例: 100）</label>
+                            <input type="number" id="endRow" placeholder="100" value="100" min="1" style="width: 80px; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label style="font-weight: 600; margin-bottom: 8px; display: block;">編集モード</label>
+                        <div style="display: flex; gap: 15px;">
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="radio" name="editMode" value="placeholder" checked>
+                                <span>プレースホルダー置換（{{...}}を検出）</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="radio" name="editMode" value="full">
+                                <span>全体編集（すべてのセルを編集）</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="loadCellsForReplacement()" style="margin-top: 10px;">セルを読み込む</button>
+                </div>
+
+                <!-- ステップ3: 置換作業 -->
+                <div id="replacementSection" style="display: none;">
+                    <h3 style="font-size: 1em; margin-bottom: 10px;">3. プレースホルダーを置換</h3>
+                    <div id="replacementProgress" style="margin-bottom: 10px; font-size: 0.9em; color: #667eea;"></div>
+
+                    <div id="currentCellInfo" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-weight: 600; margin-bottom: 8px; color: #667eea;">セル: <span id="currentCellAddress"></span></div>
+                        <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 12px; white-space: pre-wrap; font-size: 0.9em;" id="currentCellContent"></div>
+
+                        <div id="placeholderInputs" style="margin-top: 15px;"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button class="btn" onclick="skipCurrentCell()" style="background: #6b7280; color: white;">スキップ</button>
+                        <button class="btn btn-primary" onclick="replaceAndNext()">置換して次へ →</button>
+                    </div>
+                </div>
+
+                <!-- ステップ4: ダウンロード -->
+                <div id="downloadReplacedSection" style="display: none; margin-top: 30px; text-align: center;">
+                    <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 15px; color: #155724;">
+                        ✓ すべての置換が完了しました！
+                    </div>
+                    <button class="btn btn-primary" onclick="downloadReplacedExcel()">📥 置換後のエクセルをダウンロード</button>
+                </div>
             </div>
         </div>
     </div>
