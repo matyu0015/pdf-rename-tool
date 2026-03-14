@@ -1202,15 +1202,18 @@ function setupAutoDetectEndRow() {
     detectEndRow();
 }
 
-// 終了行を自動検出
+// データ範囲を自動検出して表示
 function detectEndRow() {
     if (!replaceWorkbook) return;
 
-    const column = document.getElementById('targetColumn').value.trim().toUpperCase();
-    const sheetName = document.getElementById('sheetSelect').value;
-    const startRow = parseInt(document.getElementById('startRow').value) || 2;
+    const column = document.getElementById('targetColumn')?.value.trim().toUpperCase();
+    const sheetName = document.getElementById('sheetSelect')?.value;
 
-    if (!column || !sheetName) return;
+    if (!column || !sheetName) {
+        const infoDiv = document.getElementById('autoDetectInfo');
+        if (infoDiv) infoDiv.textContent = '';
+        return;
+    }
 
     try {
         const sheet = replaceWorkbook.Sheets[sheetName];
@@ -1219,33 +1222,35 @@ function detectEndRow() {
         // 列名をインデックスに変換（A=0, B=1, ...）
         const colIndex = XLSX.utils.decode_col(column);
 
-        // 指定列の最終行を検出（データがある最後の行）
-        let lastRow = 0;
-        for (let R = startRow - 1; R <= range.e.r; R++) {
+        // 指定列の最初と最後のデータ行を検出
+        let firstRow = null;
+        let lastRow = null;
+
+        for (let R = 0; R <= range.e.r; R++) {
             const cellAddress = XLSX.utils.encode_cell({ r: R, c: colIndex });
             const cell = sheet[cellAddress];
             if (cell && cell.v !== undefined && cell.v !== null && String(cell.v).trim() !== '') {
+                if (firstRow === null) firstRow = R + 1; // 1-indexed
                 lastRow = R + 1; // 1-indexed
             }
         }
 
-        const endRowInput = document.getElementById('endRow');
         const infoDiv = document.getElementById('autoDetectInfo');
+        if (!infoDiv) return;
 
-        if (lastRow >= startRow) {
-            endRowInput.value = lastRow;
-            const dataCount = lastRow - startRow + 1;
-            infoDiv.textContent = `✓ ${column}列に${dataCount}件のデータを検出しました（${startRow}行目〜${lastRow}行目）`;
+        if (firstRow !== null && lastRow !== null) {
+            const dataCount = lastRow - firstRow + 1;
+            infoDiv.textContent = `✓ ${column}列に${dataCount}件のデータを検出しました（${firstRow}行目〜${lastRow}行目）`;
             infoDiv.style.color = '#059669';
         } else {
-            endRowInput.value = '';
             infoDiv.textContent = `⚠ ${column}列にデータが見つかりませんでした`;
             infoDiv.style.color = '#d97706';
         }
 
     } catch (error) {
-        console.error('終了行の自動検出エラー:', error);
-        document.getElementById('autoDetectInfo').textContent = '';
+        console.error('データ範囲の自動検出エラー:', error);
+        const infoDiv = document.getElementById('autoDetectInfo');
+        if (infoDiv) infoDiv.textContent = '';
     }
 }
 
@@ -1254,7 +1259,7 @@ function loadCellsForReplacement() {
     console.log('=== loadCellsForReplacement 開始 ===');
 
     if (!replaceWorkbook) {
-        alert('先にエクセルファイルをアップロードしてください');
+        alert('先にエクセル/CSVファイルをアップロードしてください');
         return;
     }
 
@@ -1264,60 +1269,65 @@ function loadCellsForReplacement() {
 
     selectedSheetName = document.getElementById('sheetSelect').value;
     const column = document.getElementById('targetColumn').value.trim().toUpperCase();
-    const startRow = parseInt(document.getElementById('startRow').value);
-    const endRow = parseInt(document.getElementById('endRow').value);
 
     console.log('シート:', selectedSheetName);
     console.log('列:', column);
-    console.log('開始行:', startRow);
-    console.log('終了行:', endRow);
 
-    if (!column || isNaN(startRow) || isNaN(endRow)) {
-        alert('対象列、開始行、終了行を入力してください');
+    if (!column) {
+        alert('対象列を入力してください');
         return;
     }
-
-    if (startRow > endRow) {
-        alert('開始行は終了行以下である必要があります');
-        return;
-    }
-
-    // 列と行から開始セルと終了セルを構築
-    const startCell = `${column}${startRow}`;
-    const endCell = `${column}${endRow}`;
-    console.log('セル範囲:', startCell, 'から', endCell);
 
     try {
         const sheet = replaceWorkbook.Sheets[selectedSheetName];
-        const startRef = XLSX.utils.decode_cell(startCell);
-        const endRef = XLSX.utils.decode_cell(endCell);
-        console.log('startRef:', startRef);
-        console.log('endRef:', endRef);
+        const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+        const colIndex = XLSX.utils.decode_col(column);
+
+        console.log('シート範囲:', range);
+        console.log('列インデックス:', colIndex);
+
+        // 指定列のすべてのデータを検出
+        let firstRow = null;
+        let lastRow = null;
+
+        for (let R = 0; R <= range.e.r; R++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: R, c: colIndex });
+            const cell = sheet[cellAddress];
+            if (cell && cell.v !== undefined && cell.v !== null && String(cell.v).trim() !== '') {
+                if (firstRow === null) firstRow = R;
+                lastRow = R;
+            }
+        }
+
+        if (firstRow === null || lastRow === null) {
+            alert(`${column}列にデータが見つかりませんでした`);
+            return;
+        }
+
+        console.log('データ範囲:', firstRow, 'から', lastRow);
 
         replaceCells = [];
 
-        // セル範囲を走査（すべてのセルを対象）
-        for (let R = startRef.r; R <= endRef.r; R++) {
-            for (let C = startRef.c; C <= endRef.c; C++) {
-                const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-                const cell = sheet[cellAddress];
-                if (cell && cell.v) {
-                    const content = String(cell.v);
-                    replaceCells.push({
-                        address: cellAddress,
-                        originalContent: content,
-                        currentContent: content,
-                        row: R,
-                        col: C
-                    });
-                }
+        // 指定列の全データを走査
+        for (let R = firstRow; R <= lastRow; R++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: R, c: colIndex });
+            const cell = sheet[cellAddress];
+            if (cell && cell.v !== undefined && cell.v !== null && String(cell.v).trim() !== '') {
+                const content = String(cell.v);
+                replaceCells.push({
+                    address: cellAddress,
+                    originalContent: content,
+                    currentContent: content,
+                    row: R,
+                    col: colIndex
+                });
             }
         }
 
         console.log('抽出されたセル数:', replaceCells.length);
 
         if (replaceCells.length === 0) {
-            alert('指定範囲にセルが見つかりませんでした');
+            alert('指定列にデータが見つかりませんでした');
             return;
         }
 
