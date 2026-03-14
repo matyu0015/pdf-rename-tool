@@ -1123,14 +1123,38 @@ let currentCellIndex = 0;
 let selectedSheetName = '';
 let editMode = 'placeholder'; // 'placeholder' または 'full'
 
-// エクセルファイルのアップロード処理
+// エクセル/CSVファイルのアップロード処理
 document.getElementById('replaceExcelFile')?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
         const data = await file.arrayBuffer();
-        replaceWorkbook = XLSX.read(data);
+        const isCSV = file.name.toLowerCase().endsWith('.csv');
+
+        // CSVの場合は、文字エンコーディングを自動判定して読み込む
+        if (isCSV) {
+            let text;
+            try {
+                // まずUTF-8で試す
+                text = new TextDecoder('utf-8').decode(data);
+                // 文字化けチェック（�が含まれている場合は失敗）
+                if (text.includes('�')) {
+                    throw new Error('UTF-8 decode failed');
+                }
+            } catch (e) {
+                // UTF-8で失敗した場合はShift_JISで試す
+                try {
+                    text = new TextDecoder('shift-jis').decode(data);
+                } catch (e2) {
+                    // Shift_JISもサポートされていない場合はそのままUTF-8で
+                    text = new TextDecoder('utf-8').decode(data);
+                }
+            }
+            replaceWorkbook = XLSX.read(text, { type: 'string' });
+        } else {
+            replaceWorkbook = XLSX.read(data);
+        }
 
         // シート名のリストを作成
         const sheetSelect = document.getElementById('sheetSelect');
@@ -1142,7 +1166,9 @@ document.getElementById('replaceExcelFile')?.addEventListener('change', async (e
             sheetSelect.appendChild(option);
         });
 
-        document.getElementById('replaceExcelStatus').textContent = `✓ ファイルを読み込みました（${replaceWorkbook.SheetNames.length}シート）`;
+        const fileType = isCSV ? 'CSVファイル' : 'エクセルファイル';
+        const sheetInfo = isCSV ? '' : `（${replaceWorkbook.SheetNames.length}シート）`;
+        document.getElementById('replaceExcelStatus').textContent = `✓ ${fileType}を読み込みました${sheetInfo}`;
         document.getElementById('replaceExcelStatus').className = 'status success';
         document.getElementById('sheetSelectionSection').style.display = 'block';
 
