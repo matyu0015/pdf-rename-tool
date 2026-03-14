@@ -1283,40 +1283,55 @@ function showCurrentCell() {
     console.log('編集モード:', editMode);
 
     if (editMode === 'placeholder') {
-        // プレースホルダー置換モード
-        const placeholders = extractPlaceholders(cell.currentContent);
-        console.log('抽出されたプレースホルダー:', placeholders);
+        // ドラッグ選択による置換モード
+        const instructionDiv = document.createElement('div');
+        instructionDiv.style.marginBottom = '15px';
+        instructionDiv.style.padding = '12px';
+        instructionDiv.style.background = '#eff6ff';
+        instructionDiv.style.borderRadius = '6px';
+        instructionDiv.style.color = '#1e40af';
+        instructionDiv.style.fontSize = '0.9em';
+        instructionDiv.innerHTML = '💡 下のテキストから置換したい部分をドラッグして選択し、「選択範囲を追加」ボタンをクリックしてください';
+        inputsDiv.appendChild(instructionDiv);
 
-        if (placeholders.length === 0) {
-            inputsDiv.innerHTML = '<p style="color: #999;">プレースホルダーが見つかりません</p>';
-            return;
+        // 選択可能なテキストエリア
+        const selectableDiv = document.createElement('div');
+        selectableDiv.id = 'selectable-content';
+        selectableDiv.style.background = 'white';
+        selectableDiv.style.padding = '12px';
+        selectableDiv.style.border = '2px solid #667eea';
+        selectableDiv.style.borderRadius = '6px';
+        selectableDiv.style.marginBottom = '12px';
+        selectableDiv.style.whiteSpace = 'pre-wrap';
+        selectableDiv.style.fontSize = '0.95em';
+        selectableDiv.style.lineHeight = '1.6';
+        selectableDiv.style.userSelect = 'text';
+        selectableDiv.style.cursor = 'text';
+        selectableDiv.textContent = cell.currentContent;
+        inputsDiv.appendChild(selectableDiv);
+
+        // 選択範囲を追加するボタン
+        const addButton = document.createElement('button');
+        addButton.className = 'btn';
+        addButton.textContent = '✨ 選択範囲を追加';
+        addButton.style.marginBottom = '15px';
+        addButton.style.background = '#667eea';
+        addButton.style.color = 'white';
+        addButton.onclick = () => addSelectedRange();
+        inputsDiv.appendChild(addButton);
+
+        // 置換リストを表示するエリア
+        const replacementListDiv = document.createElement('div');
+        replacementListDiv.id = 'replacement-list';
+        replacementListDiv.style.marginTop = '15px';
+        inputsDiv.appendChild(replacementListDiv);
+
+        // 既存の置換リストがあれば表示
+        if (!cell.replacements) {
+            cell.replacements = [];
         }
+        updateReplacementList();
 
-        placeholders.forEach((ph, index) => {
-            const fieldDiv = document.createElement('div');
-            fieldDiv.style.marginBottom = '10px';
-
-            const label = document.createElement('label');
-            label.textContent = ph;
-            label.style.display = 'block';
-            label.style.marginBottom = '5px';
-            label.style.fontWeight = '600';
-            label.style.color = '#667eea';
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.id = `placeholder-input-${index}`;
-            input.dataset.placeholder = ph;
-            input.placeholder = `${ph}の置換後の値を入力`;
-            input.style.width = '100%';
-            input.style.padding = '8px';
-            input.style.border = '2px solid #ddd';
-            input.style.borderRadius = '6px';
-
-            fieldDiv.appendChild(label);
-            fieldDiv.appendChild(input);
-            inputsDiv.appendChild(fieldDiv);
-        });
     } else {
         // 全体編集モード
         const label = document.createElement('label');
@@ -1342,7 +1357,113 @@ function showCurrentCell() {
     }
 }
 
-// プレースホルダーを抽出
+// ドラッグ選択範囲を追加
+function addSelectedRange() {
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+
+    if (!selectedText) {
+        alert('テキストを選択してから「選択範囲を追加」ボタンをクリックしてください');
+        return;
+    }
+
+    const cell = replaceCells[currentCellIndex];
+    if (!cell.replacements) {
+        cell.replacements = [];
+    }
+
+    // 既に同じテキストが登録されているか確認
+    const existing = cell.replacements.find(r => r.original === selectedText);
+    if (existing) {
+        alert(`「${selectedText}」は既に追加されています`);
+        return;
+    }
+
+    // 置換リストに追加
+    cell.replacements.push({
+        original: selectedText,
+        replacement: ''
+    });
+
+    // リストを更新
+    updateReplacementList();
+
+    // 選択をクリア
+    selection.removeAllRanges();
+}
+
+// 置換リストを更新
+function updateReplacementList() {
+    const cell = replaceCells[currentCellIndex];
+    const listDiv = document.getElementById('replacement-list');
+
+    if (!listDiv) return;
+
+    listDiv.innerHTML = '';
+
+    if (!cell.replacements || cell.replacements.length === 0) {
+        listDiv.innerHTML = '<p style="color: #999; font-size: 0.9em;">まだ置換対象が追加されていません</p>';
+        return;
+    }
+
+    cell.replacements.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.style.marginBottom = '15px';
+        itemDiv.style.padding = '12px';
+        itemDiv.style.background = '#f8f9fa';
+        itemDiv.style.borderRadius = '6px';
+        itemDiv.style.border = '1px solid #ddd';
+
+        const originalLabel = document.createElement('div');
+        originalLabel.style.fontWeight = '600';
+        originalLabel.style.marginBottom = '8px';
+        originalLabel.style.color = '#667eea';
+        originalLabel.textContent = `置換前: "${item.original}"`;
+        itemDiv.appendChild(originalLabel);
+
+        const inputContainer = document.createElement('div');
+        inputContainer.style.display = 'flex';
+        inputContainer.style.gap = '8px';
+        inputContainer.style.alignItems = 'center';
+
+        const label = document.createElement('label');
+        label.textContent = '置換後:';
+        label.style.minWidth = '60px';
+        label.style.fontSize = '0.9em';
+        inputContainer.appendChild(label);
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = item.replacement;
+        input.placeholder = '置換後のテキストを入力';
+        input.style.flex = '1';
+        input.style.padding = '8px';
+        input.style.border = '2px solid #ddd';
+        input.style.borderRadius = '6px';
+        input.onchange = (e) => {
+            item.replacement = e.target.value;
+        };
+        inputContainer.appendChild(input);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '🗑️';
+        deleteBtn.className = 'btn';
+        deleteBtn.style.padding = '6px 12px';
+        deleteBtn.style.background = '#ef4444';
+        deleteBtn.style.color = 'white';
+        deleteBtn.style.minWidth = '40px';
+        deleteBtn.onclick = () => {
+            cell.replacements.splice(index, 1);
+            updateReplacementList();
+        };
+        inputContainer.appendChild(deleteBtn);
+
+        itemDiv.appendChild(inputContainer);
+        listDiv.appendChild(itemDiv);
+    });
+}
+
+// プレースホルダーを抽出（旧方式・参考用に残す）
 function extractPlaceholders(text) {
     const regex = /\{\{([^}]+)\}\}/g;
     const placeholders = [];
@@ -1368,16 +1489,17 @@ function replaceAndNext() {
     let newContent = cell.currentContent;
 
     if (editMode === 'placeholder') {
-        // プレースホルダー置換モード
-        const inputs = document.querySelectorAll('[id^="placeholder-input-"]');
-        inputs.forEach(input => {
-            const placeholder = input.dataset.placeholder;
-            const value = input.value.trim();
-            if (value) {
-                // プレースホルダーを置換
-                newContent = newContent.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
-            }
-        });
+        // ドラッグ選択による置換モード
+        if (cell.replacements && cell.replacements.length > 0) {
+            // 各置換対象を処理
+            cell.replacements.forEach(item => {
+                if (item.replacement) {
+                    // エスケープして正規表現で置換（全て置換）
+                    const escapedOriginal = item.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    newContent = newContent.replace(new RegExp(escapedOriginal, 'g'), item.replacement);
+                }
+            });
+        }
     } else {
         // 全体編集モード
         const textarea = document.getElementById('full-edit-textarea');
