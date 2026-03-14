@@ -1172,11 +1172,82 @@ document.getElementById('replaceExcelFile')?.addEventListener('change', async (e
         document.getElementById('replaceExcelStatus').className = 'status success';
         document.getElementById('sheetSelectionSection').style.display = 'block';
 
+        // 対象列が変更されたら終了行を自動検出
+        setupAutoDetectEndRow();
+
     } catch (error) {
         document.getElementById('replaceExcelStatus').textContent = 'エラー: ' + error.message;
         document.getElementById('replaceExcelStatus').className = 'status error';
     }
 });
+
+// 終了行の自動検出設定
+function setupAutoDetectEndRow() {
+    const targetColumnInput = document.getElementById('targetColumn');
+    const sheetSelect = document.getElementById('sheetSelect');
+
+    // イベントリスナーを削除してから再設定（重複を防ぐ）
+    const newTargetColumnInput = targetColumnInput.cloneNode(true);
+    targetColumnInput.parentNode.replaceChild(newTargetColumnInput, targetColumnInput);
+
+    const newSheetSelect = sheetSelect.cloneNode(true);
+    sheetSelect.parentNode.replaceChild(newSheetSelect, sheetSelect);
+
+    // 対象列またはシートが変更されたら自動検出
+    newTargetColumnInput.addEventListener('input', detectEndRow);
+    newTargetColumnInput.addEventListener('change', detectEndRow);
+    newSheetSelect.addEventListener('change', detectEndRow);
+
+    // 初回実行
+    detectEndRow();
+}
+
+// 終了行を自動検出
+function detectEndRow() {
+    if (!replaceWorkbook) return;
+
+    const column = document.getElementById('targetColumn').value.trim().toUpperCase();
+    const sheetName = document.getElementById('sheetSelect').value;
+    const startRow = parseInt(document.getElementById('startRow').value) || 2;
+
+    if (!column || !sheetName) return;
+
+    try {
+        const sheet = replaceWorkbook.Sheets[sheetName];
+        const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+
+        // 列名をインデックスに変換（A=0, B=1, ...）
+        const colIndex = XLSX.utils.decode_col(column);
+
+        // 指定列の最終行を検出（データがある最後の行）
+        let lastRow = 0;
+        for (let R = startRow - 1; R <= range.e.r; R++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: R, c: colIndex });
+            const cell = sheet[cellAddress];
+            if (cell && cell.v !== undefined && cell.v !== null && String(cell.v).trim() !== '') {
+                lastRow = R + 1; // 1-indexed
+            }
+        }
+
+        const endRowInput = document.getElementById('endRow');
+        const infoDiv = document.getElementById('autoDetectInfo');
+
+        if (lastRow >= startRow) {
+            endRowInput.value = lastRow;
+            const dataCount = lastRow - startRow + 1;
+            infoDiv.textContent = `✓ ${column}列に${dataCount}件のデータを検出しました（${startRow}行目〜${lastRow}行目）`;
+            infoDiv.style.color = '#059669';
+        } else {
+            endRowInput.value = '';
+            infoDiv.textContent = `⚠ ${column}列にデータが見つかりませんでした`;
+            infoDiv.style.color = '#d97706';
+        }
+
+    } catch (error) {
+        console.error('終了行の自動検出エラー:', error);
+        document.getElementById('autoDetectInfo').textContent = '';
+    }
+}
 
 // セル範囲を読み込む
 function loadCellsForReplacement() {
