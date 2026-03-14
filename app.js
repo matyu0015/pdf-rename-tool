@@ -1161,9 +1161,8 @@ function loadCellsForReplacement() {
         return;
     }
 
-    // 編集モードを取得
-    const modeRadio = document.querySelector('input[name="editMode"]:checked');
-    editMode = modeRadio ? modeRadio.value : 'placeholder';
+    // 編集モードは常に'placeholder'（ドラッグ選択方式）
+    editMode = 'placeholder';
     console.log('編集モード:', editMode);
 
     selectedSheetName = document.getElementById('sheetSelect').value;
@@ -1200,36 +1199,20 @@ function loadCellsForReplacement() {
 
         replaceCells = [];
 
-        // セル範囲を走査
+        // セル範囲を走査（すべてのセルを対象）
         for (let R = startRef.r; R <= endRef.r; R++) {
             for (let C = startRef.c; C <= endRef.c; C++) {
                 const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
                 const cell = sheet[cellAddress];
                 if (cell && cell.v) {
                     const content = String(cell.v);
-
-                    // モードに応じて対象セルを選択
-                    if (editMode === 'placeholder') {
-                        // プレースホルダーがあるセルのみ
-                        if (content.includes('{{') && content.includes('}}')) {
-                            replaceCells.push({
-                                address: cellAddress,
-                                originalContent: content,
-                                currentContent: content,
-                                row: R,
-                                col: C
-                            });
-                        }
-                    } else {
-                        // 全体編集モード：すべてのセルを対象
-                        replaceCells.push({
-                            address: cellAddress,
-                            originalContent: content,
-                            currentContent: content,
-                            row: R,
-                            col: C
-                        });
-                    }
+                    replaceCells.push({
+                        address: cellAddress,
+                        originalContent: content,
+                        currentContent: content,
+                        row: R,
+                        col: C
+                    });
                 }
             }
         }
@@ -1237,10 +1220,7 @@ function loadCellsForReplacement() {
         console.log('抽出されたセル数:', replaceCells.length);
 
         if (replaceCells.length === 0) {
-            const message = editMode === 'placeholder'
-                ? '指定範囲にプレースホルダー（{{...}}）が見つかりませんでした'
-                : '指定範囲にセルが見つかりませんでした';
-            alert(message);
+            alert('指定範囲にセルが見つかりませんでした');
             return;
         }
 
@@ -1280,81 +1260,54 @@ function showCurrentCell() {
     const inputsDiv = document.getElementById('placeholderInputs');
     inputsDiv.innerHTML = '';
 
-    console.log('編集モード:', editMode);
+    // ドラッグ選択による置換モード
+    const instructionDiv = document.createElement('div');
+    instructionDiv.style.marginBottom = '15px';
+    instructionDiv.style.padding = '12px';
+    instructionDiv.style.background = '#eff6ff';
+    instructionDiv.style.borderRadius = '6px';
+    instructionDiv.style.color = '#1e40af';
+    instructionDiv.style.fontSize = '0.9em';
+    instructionDiv.innerHTML = '💡 下のテキストから置換したい部分をドラッグして選択し、「選択範囲を追加」ボタンをクリックしてください';
+    inputsDiv.appendChild(instructionDiv);
 
-    if (editMode === 'placeholder') {
-        // ドラッグ選択による置換モード
-        const instructionDiv = document.createElement('div');
-        instructionDiv.style.marginBottom = '15px';
-        instructionDiv.style.padding = '12px';
-        instructionDiv.style.background = '#eff6ff';
-        instructionDiv.style.borderRadius = '6px';
-        instructionDiv.style.color = '#1e40af';
-        instructionDiv.style.fontSize = '0.9em';
-        instructionDiv.innerHTML = '💡 下のテキストから置換したい部分をドラッグして選択し、「選択範囲を追加」ボタンをクリックしてください';
-        inputsDiv.appendChild(instructionDiv);
+    // 選択可能なテキストエリア
+    const selectableDiv = document.createElement('div');
+    selectableDiv.id = 'selectable-content';
+    selectableDiv.style.background = 'white';
+    selectableDiv.style.padding = '12px';
+    selectableDiv.style.border = '2px solid #667eea';
+    selectableDiv.style.borderRadius = '6px';
+    selectableDiv.style.marginBottom = '12px';
+    selectableDiv.style.whiteSpace = 'pre-wrap';
+    selectableDiv.style.fontSize = '0.95em';
+    selectableDiv.style.lineHeight = '1.6';
+    selectableDiv.style.userSelect = 'text';
+    selectableDiv.style.cursor = 'text';
+    selectableDiv.textContent = cell.currentContent;
+    inputsDiv.appendChild(selectableDiv);
 
-        // 選択可能なテキストエリア
-        const selectableDiv = document.createElement('div');
-        selectableDiv.id = 'selectable-content';
-        selectableDiv.style.background = 'white';
-        selectableDiv.style.padding = '12px';
-        selectableDiv.style.border = '2px solid #667eea';
-        selectableDiv.style.borderRadius = '6px';
-        selectableDiv.style.marginBottom = '12px';
-        selectableDiv.style.whiteSpace = 'pre-wrap';
-        selectableDiv.style.fontSize = '0.95em';
-        selectableDiv.style.lineHeight = '1.6';
-        selectableDiv.style.userSelect = 'text';
-        selectableDiv.style.cursor = 'text';
-        selectableDiv.textContent = cell.currentContent;
-        inputsDiv.appendChild(selectableDiv);
+    // 選択範囲を追加するボタン
+    const addButton = document.createElement('button');
+    addButton.className = 'btn';
+    addButton.textContent = '✨ 選択範囲を追加';
+    addButton.style.marginBottom = '15px';
+    addButton.style.background = '#667eea';
+    addButton.style.color = 'white';
+    addButton.onclick = () => addSelectedRange();
+    inputsDiv.appendChild(addButton);
 
-        // 選択範囲を追加するボタン
-        const addButton = document.createElement('button');
-        addButton.className = 'btn';
-        addButton.textContent = '✨ 選択範囲を追加';
-        addButton.style.marginBottom = '15px';
-        addButton.style.background = '#667eea';
-        addButton.style.color = 'white';
-        addButton.onclick = () => addSelectedRange();
-        inputsDiv.appendChild(addButton);
+    // 置換リストを表示するエリア
+    const replacementListDiv = document.createElement('div');
+    replacementListDiv.id = 'replacement-list';
+    replacementListDiv.style.marginTop = '15px';
+    inputsDiv.appendChild(replacementListDiv);
 
-        // 置換リストを表示するエリア
-        const replacementListDiv = document.createElement('div');
-        replacementListDiv.id = 'replacement-list';
-        replacementListDiv.style.marginTop = '15px';
-        inputsDiv.appendChild(replacementListDiv);
-
-        // 既存の置換リストがあれば表示
-        if (!cell.replacements) {
-            cell.replacements = [];
-        }
-        updateReplacementList();
-
-    } else {
-        // 全体編集モード
-        const label = document.createElement('label');
-        label.textContent = '新しい内容を入力してください';
-        label.style.display = 'block';
-        label.style.marginBottom = '5px';
-        label.style.fontWeight = '600';
-        label.style.color = '#667eea';
-
-        const textarea = document.createElement('textarea');
-        textarea.id = 'full-edit-textarea';
-        textarea.value = cell.currentContent;
-        textarea.rows = 10;
-        textarea.style.width = '100%';
-        textarea.style.padding = '10px';
-        textarea.style.border = '2px solid #ddd';
-        textarea.style.borderRadius = '6px';
-        textarea.style.fontFamily = 'inherit';
-        textarea.style.fontSize = '0.9em';
-
-        inputsDiv.appendChild(label);
-        inputsDiv.appendChild(textarea);
+    // 既存の置換リストがあれば表示
+    if (!cell.replacements) {
+        cell.replacements = [];
     }
+    updateReplacementList();
 }
 
 // ドラッグ選択範囲を追加
@@ -1488,24 +1441,16 @@ function replaceAndNext() {
     const cell = replaceCells[currentCellIndex];
     let newContent = cell.currentContent;
 
-    if (editMode === 'placeholder') {
-        // ドラッグ選択による置換モード
-        if (cell.replacements && cell.replacements.length > 0) {
-            // 各置換対象を処理
-            cell.replacements.forEach(item => {
-                if (item.replacement) {
-                    // エスケープして正規表現で置換（全て置換）
-                    const escapedOriginal = item.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    newContent = newContent.replace(new RegExp(escapedOriginal, 'g'), item.replacement);
-                }
-            });
-        }
-    } else {
-        // 全体編集モード
-        const textarea = document.getElementById('full-edit-textarea');
-        if (textarea) {
-            newContent = textarea.value;
-        }
+    // ドラッグ選択による置換を実行
+    if (cell.replacements && cell.replacements.length > 0) {
+        // 各置換対象を処理
+        cell.replacements.forEach(item => {
+            if (item.replacement) {
+                // エスケープして正規表現で置換（全て置換）
+                const escapedOriginal = item.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                newContent = newContent.replace(new RegExp(escapedOriginal, 'g'), item.replacement);
+            }
+        });
     }
 
     // セル内容を更新

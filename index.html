@@ -241,26 +241,12 @@
                         </div>
                     </div>
 
-                    <div style="margin-top: 15px;">
-                        <label style="font-weight: 600; margin-bottom: 8px; display: block;">編集モード</label>
-                        <div style="display: flex; gap: 15px;">
-                            <label style="display: flex; align-items: center; gap: 5px;">
-                                <input type="radio" name="editMode" value="placeholder" checked>
-                                <span>プレースホルダー置換（{{...}}を検出）</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 5px;">
-                                <input type="radio" name="editMode" value="full">
-                                <span>全体編集（すべてのセルを編集）</span>
-                            </label>
-                        </div>
-                    </div>
-
                     <button class="btn btn-primary" onclick="loadCellsForReplacement()" style="margin-top: 10px;">セルを読み込む</button>
                 </div>
 
                 <!-- ステップ3: 置換作業 -->
                 <div id="replacementSection" style="display: none;">
-                    <h3 style="font-size: 1em; margin-bottom: 10px;">3. プレースホルダーを置換</h3>
+                    <h3 style="font-size: 1em; margin-bottom: 10px;">3. 内容を編集</h3>
                     <div id="replacementProgress" style="margin-bottom: 10px; font-size: 0.9em; color: #667eea;"></div>
 
                     <div id="currentCellInfo" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
