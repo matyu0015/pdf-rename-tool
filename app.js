@@ -7,6 +7,9 @@ let pdfData = [];
 
 // グローバル変数（日程整理機能）
 let currentData = [];
+let currentMergeStartTimeWithDate = false;
+let currentMergeDeadlineTimeWithDate = false;
+let currentDeadlineTime = '09:00';
 
 // ===== メインタブ切り替え =====
 function switchMainTab(tabId) {
@@ -288,10 +291,18 @@ function showStatus(elementId, message, type) {
 // サブタブ切り替え（日程整理内のタブ）
 function switchSubTab(tab) {
     document.querySelectorAll('.tab-btn-sub').forEach((btn, i) => {
-        btn.classList.toggle('active', (i === 0 && tab === 'text') || (i === 1 && tab === 'excel'));
+        btn.classList.toggle('active',
+            (i === 0 && tab === 'text') ||
+            (i === 1 && tab === 'excel') ||
+            (i === 2 && tab === 'pdf')
+        );
     });
     document.getElementById('tab-text').classList.toggle('active', tab === 'text');
     document.getElementById('tab-excel').classList.toggle('active', tab === 'excel');
+    const pdfTab = document.getElementById('tab-pdf');
+    if (pdfTab) {
+        pdfTab.classList.toggle('active', tab === 'pdf');
+    }
 }
 
 // Excel取り込み
@@ -314,6 +325,134 @@ function onDrop(e) {
 function onFileSelect(e) {
     const file = e.target.files[0];
     if (file) readScheduleExcelFile(file);
+}
+
+// PDF取り込み用のドラッグ&ドロップ処理
+function onPdfDragOver(e) {
+    e.preventDefault();
+    document.getElementById('pdfUploadArea').classList.add('dragover');
+}
+
+function onPdfDragLeave(e) {
+    document.getElementById('pdfUploadArea').classList.remove('dragover');
+}
+
+function onPdfDrop(e) {
+    e.preventDefault();
+    document.getElementById('pdfUploadArea').classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+        readSchedulePdfFile(file);
+    } else {
+        document.getElementById('pdfUploadResult').textContent = 'PDFファイルを選択してください。';
+        document.getElementById('pdfUploadResult').style.color = '#b91c1c';
+    }
+}
+
+function onPdfFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) readSchedulePdfFile(file);
+}
+
+// PDFファイルからテキストを抽出して日程を解析
+async function readSchedulePdfFile(file) {
+    try {
+        document.getElementById('pdfUploadResult').textContent = 'PDFを読み込み中...';
+        document.getElementById('pdfUploadResult').style.color = '#667eea';
+
+        // PDFファイルを読み込み
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({
+            data: arrayBuffer,
+            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+            cMapPacked: true
+        });
+        const pdf = await loadingTask.promise;
+
+        // 全ページからテキストを抽出
+        let allText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            allText += pageText + '\n';
+        }
+
+        // デバッグ用：抽出したテキストをコンソールに出力
+        console.log('=== 抽出されたテキスト ===');
+        console.log(allText);
+        console.log('========================');
+
+        // 抽出したテキストから日付と時間をペアリング
+        const schedules = extractSchedulesFromPdfText(allText);
+
+        // デバッグ用：抽出された日程を出力
+        console.log('=== 抽出された日程 ===');
+        console.log(schedules);
+        console.log('=====================');
+
+        if (schedules.length === 0) {
+            document.getElementById('pdfUploadResult').textContent = '日付データが見つかりませんでした。';
+            document.getElementById('pdfUploadResult').style.color = '#b91c1c';
+            return;
+        }
+
+        // テキストエリアに反映
+        document.getElementById('dateInput').value = schedules.join('\n');
+        document.getElementById('pdfUploadResult').textContent =
+            `${schedules.length}件の日程を取り込みました → テキスト欄に反映しました`;
+        document.getElementById('pdfUploadResult').style.color = '#059669';
+
+        switchSubTab('text');
+        updateCalendarFromInput();
+
+    } catch(err) {
+        console.error('PDF読み込みエラー:', err);
+        document.getElementById('pdfUploadResult').textContent = '読み込みエラー：' + err.message;
+        document.getElementById('pdfUploadResult').style.color = '#b91c1c';
+    }
+}
+
+// PDFから抽出したテキストを解析して日程リストを作成
+function extractSchedulesFromPdfText(text) {
+    const schedules = [];
+
+    // 全体を単語に分割（スペースと改行で分割）
+    const words = text.split(/[\s\n]+/).filter(w => w.trim());
+
+    let currentDate = null;
+    const datePattern = /(\d{1,2})月(\d{1,2})日/;
+    const timePattern = /^(\d{1,2}):(\d{2})$/;
+
+    console.log('=== 分割された単語 ===');
+    console.log(words);
+    console.log('=====================');
+
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i].trim();
+        if (!word) continue;
+
+        // 日付を検出
+        const dateMatch = word.match(datePattern);
+        if (dateMatch) {
+            currentDate = `${dateMatch[1]}月${dateMatch[2]}日`;
+            console.log(`日付検出: ${currentDate}`);
+            continue;
+        }
+
+        // 時間を検出（現在の日付と紐付け）
+        const timeMatch = word.match(timePattern);
+        if (timeMatch && currentDate) {
+            const hour = timeMatch[1].padStart(2, '0');
+            const minute = timeMatch[2].padStart(2, '0');
+            const schedule = `${currentDate} ${hour}:${minute}`;
+            schedules.push(schedule);
+            console.log(`日程追加: ${schedule}`);
+        }
+    }
+
+    // 重複を除去
+    return [...new Set(schedules)];
 }
 
 function readScheduleExcelFile(file) {
@@ -730,6 +869,9 @@ function processSchedule() {
     const defaultYear = parseInt(document.getElementById('defaultYear').value) || 2025;
     const nBefore = parseInt(document.getElementById('businessDaysBefore').value) || 0;
     const enableSlot = document.getElementById('enableSlot').checked;
+    const mergeStartTimeWithDate = document.getElementById('mergeStartTimeWithDate').checked;
+    const mergeDeadlineTimeWithDate = document.getElementById('mergeDeadlineTimeWithDate').checked;
+    const deadlineTime = document.getElementById('deadlineTime').value;
     const slotStart = document.getElementById('slotStart').value;
     const slotEnd = document.getElementById('slotEnd').value;
     const duration = parseInt(document.getElementById('duration').value) || 60;
@@ -788,20 +930,24 @@ function processSchedule() {
     }
 
     currentData = rows;
-    renderTable(rows, nBefore);
+    currentMergeStartTimeWithDate = mergeStartTimeWithDate;
+    currentMergeDeadlineTimeWithDate = mergeDeadlineTimeWithDate;
+    currentDeadlineTime = deadlineTime;
+    renderTable(rows, nBefore, mergeStartTimeWithDate, mergeDeadlineTimeWithDate, deadlineTime);
     document.getElementById('resultCard').style.display = 'block';
 
     const keys = new Set(parsed.map(p => p.dateKey));
     renderCalendar(keys);
 }
 
-function renderTable(rows, nBefore) {
+function renderTable(rows, nBefore, mergeStartTime = false, mergeDeadlineTime = false, deadlineTime = '09:00') {
     const showDeadline = nBefore > 0;
     const showSlot = rows.some(r => r.timeSlot);
 
     const head = document.getElementById('resultHead');
     let cols = ['実施日', '曜日', '備考'];
-    if (showSlot) cols.splice(2, 0, '時間');
+    // 開始時間を日付と結合しない場合のみ、時間列を追加
+    if (showSlot && !mergeStartTime) cols.splice(2, 0, '時間');
     if (showDeadline) cols.push(`締め切り日（${nBefore}営業日前）`, '締め切り曜日');
     head.innerHTML = '<tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
 
@@ -809,10 +955,32 @@ function renderTable(rows, nBefore) {
     body.innerHTML = rows.map(r => {
         const warn = r.isHoliday ? '<span class="badge badge-red">祝日</span>' :
                       r.isWeekend ? '<span class="badge">休日</span>' : '';
-        let tds = `<td>${r.dateStr}</td><td>${r.dayOfWeek}</td>`;
-        if (showSlot) tds += `<td>${r.timeSlot}</td>`;
+
+        // 開始時間のみを抽出（例: "09:00〜10:00" → "09:00"）
+        let startTime = '';
+        if (r.timeSlot) {
+            const match = r.timeSlot.match(/^(\d{2}:\d{2})/);
+            startTime = match ? match[1] : '';
+        }
+
+        // 実施日の表示（開始時間を結合する場合）
+        const dateDisplay = mergeStartTime && startTime
+            ? `${r.dateStr} ${startTime}`
+            : r.dateStr;
+
+        let tds = `<td>${dateDisplay}</td><td>${r.dayOfWeek}</td>`;
+        // 開始時間を日付と結合しない場合のみ、時間列を表示
+        if (showSlot && !mergeStartTime) tds += `<td>${r.timeSlot}</td>`;
         tds += `<td>${warn}</td>`;
-        if (showDeadline) tds += `<td>${r.deadline}</td><td>${r.deadlineDow}</td>`;
+
+        // 締切日の表示（締切時間を結合する場合）
+        if (showDeadline) {
+            const deadlineDisplay = mergeDeadlineTime && r.deadline
+                ? `${r.deadline} ${deadlineTime}`
+                : r.deadline;
+            tds += `<td>${deadlineDisplay}</td><td>${r.deadlineDow}</td>`;
+        }
+
         return `<tr>${tds}</tr>`;
     }).join('');
 }
@@ -822,18 +990,45 @@ function downloadExcel() {
     if (!currentData || currentData.length === 0) return;
 
     const nBefore = parseInt(document.getElementById('businessDaysBefore').value) || 0;
+    // 現在のトグル状態を使用（リアルタイムで反映）
+    const mergeStartTime = document.getElementById('mergeStartTimeWithDate').checked;
+    const mergeDeadlineTime = document.getElementById('mergeDeadlineTimeWithDate').checked;
+    const deadlineTime = document.getElementById('deadlineTime').value;
     const showSlot = currentData.some(r => r.timeSlot);
     const showDeadline = nBefore > 0;
 
     const headers = ['実施日', '曜日', '備考'];
-    if (showSlot) headers.splice(2, 0, '時間');
+    // 開始時間を日付と結合しない場合のみ、時間列を追加
+    if (showSlot && !mergeStartTime) headers.splice(2, 0, '時間');
     if (showDeadline) headers.push(`締め切り日（${nBefore}営業日前）`, '締め切り曜日');
 
     const dataRows = currentData.map(r => {
         const warn = r.isHoliday ? '祝日' : r.isWeekend ? '休日' : '';
-        const row = [r.dateStr, r.dayOfWeek, warn];
-        if (showSlot) row.splice(2, 0, r.timeSlot);
-        if (showDeadline) { row.push(r.deadline); row.push(r.deadlineDow); }
+
+        // 開始時間のみを抽出（例: "09:00〜10:00" → "09:00"）
+        let startTime = '';
+        if (r.timeSlot) {
+            const match = r.timeSlot.match(/^(\d{2}:\d{2})/);
+            startTime = match ? match[1] : '';
+        }
+
+        // 実施日の表示（開始時間を結合する場合）
+        const dateDisplay = mergeStartTime && startTime
+            ? `${r.dateStr} ${startTime}`
+            : r.dateStr;
+
+        const row = [dateDisplay, r.dayOfWeek, warn];
+        // 開始時間を日付と結合しない場合のみ、時間列を追加
+        if (showSlot && !mergeStartTime) row.splice(2, 0, r.timeSlot);
+
+        // 締切日の表示（締切時間を結合する場合）
+        if (showDeadline) {
+            const deadlineDisplay = mergeDeadlineTime && r.deadline
+                ? `${r.deadline} ${deadlineTime}`
+                : r.deadline;
+            row.push(deadlineDisplay);
+            row.push(r.deadlineDow);
+        }
         return row;
     });
 
@@ -883,4 +1078,38 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCalendarFromInput();
         });
     }
+
+    // 時間結合トグルの変更を監視
+    const mergeStartTimeToggle = document.getElementById('mergeStartTimeWithDate');
+    if (mergeStartTimeToggle) {
+        mergeStartTimeToggle.addEventListener('change', updateTableDisplay);
+    }
+
+    const mergeDeadlineTimeToggle = document.getElementById('mergeDeadlineTimeWithDate');
+    if (mergeDeadlineTimeToggle) {
+        mergeDeadlineTimeToggle.addEventListener('change', (e) => {
+            // 締切時間フィールドの表示/非表示を切り替え
+            const deadlineTimeSection = document.getElementById('deadlineTimeSection');
+            if (deadlineTimeSection) {
+                deadlineTimeSection.classList.toggle('active', e.target.checked);
+            }
+            updateTableDisplay();
+        });
+    }
+
+    const deadlineTimeInput = document.getElementById('deadlineTime');
+    if (deadlineTimeInput) {
+        deadlineTimeInput.addEventListener('change', updateTableDisplay);
+    }
 });
+
+// テーブル表示を更新する共通関数
+function updateTableDisplay() {
+    if (currentData && currentData.length > 0) {
+        const nBefore = parseInt(document.getElementById('businessDaysBefore').value) || 0;
+        const mergeStartTime = document.getElementById('mergeStartTimeWithDate').checked;
+        const mergeDeadlineTime = document.getElementById('mergeDeadlineTimeWithDate').checked;
+        const deadlineTime = document.getElementById('deadlineTime').value;
+        renderTable(currentData, nBefore, mergeStartTime, mergeDeadlineTime, deadlineTime);
+    }
+}
