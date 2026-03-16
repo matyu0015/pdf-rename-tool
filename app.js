@@ -294,7 +294,8 @@ function switchSubTab(tab) {
         btn.classList.toggle('active',
             (i === 0 && tab === 'text') ||
             (i === 1 && tab === 'excel') ||
-            (i === 2 && tab === 'pdf')
+            (i === 2 && tab === 'pdf') ||
+            (i === 3 && tab === 'image')
         );
     });
     document.getElementById('tab-text').classList.toggle('active', tab === 'text');
@@ -302,6 +303,10 @@ function switchSubTab(tab) {
     const pdfTab = document.getElementById('tab-pdf');
     if (pdfTab) {
         pdfTab.classList.toggle('active', tab === 'pdf');
+    }
+    const imageTab = document.getElementById('tab-image');
+    if (imageTab) {
+        imageTab.classList.toggle('active', tab === 'image');
     }
 }
 
@@ -352,6 +357,88 @@ function onPdfDrop(e) {
 function onPdfFileSelect(e) {
     const file = e.target.files[0];
     if (file) readSchedulePdfFile(file);
+}
+
+// 画像取り込み用のドラッグ&ドロップ処理
+function onImageDragOver(e) {
+    e.preventDefault();
+    document.getElementById('imageUploadArea').classList.add('dragover');
+}
+
+function onImageDragLeave(e) {
+    document.getElementById('imageUploadArea').classList.remove('dragover');
+}
+
+function onImageDrop(e) {
+    e.preventDefault();
+    document.getElementById('imageUploadArea').classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        readScheduleImageFile(file);
+    } else {
+        document.getElementById('imageUploadResult').textContent = '画像ファイルを選択してください。';
+        document.getElementById('imageUploadResult').style.color = '#b91c1c';
+    }
+}
+
+function onImageFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) readScheduleImageFile(file);
+}
+
+// 画像ファイルからOCRでテキストを抽出して日程を解析
+async function readScheduleImageFile(file) {
+    try {
+        document.getElementById('imageUploadResult').textContent = '画像を読み込み中...';
+        document.getElementById('imageUploadResult').style.color = '#667eea';
+
+        // Tesseract.jsでOCR実行（日本語+英語）
+        const { data: { text } } = await Tesseract.recognize(
+            file,
+            'jpn+eng',
+            {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        const progress = Math.round(m.progress * 100);
+                        document.getElementById('imageUploadResult').textContent = `文字認識中... ${progress}%`;
+                    }
+                }
+            }
+        );
+
+        // デバッグ用：抽出したテキストをコンソールに出力
+        console.log('=== OCRで抽出されたテキスト ===');
+        console.log(text);
+        console.log('========================');
+
+        // 抽出したテキストから日付と時間をペアリング
+        const schedules = extractSchedulesFromPdfText(text);
+
+        // デバッグ用：抽出された日程を出力
+        console.log('=== 抽出された日程 ===');
+        console.log(schedules);
+        console.log('=====================');
+
+        if (schedules.length === 0) {
+            document.getElementById('imageUploadResult').textContent = '日付データが見つかりませんでした。';
+            document.getElementById('imageUploadResult').style.color = '#b91c1c';
+            return;
+        }
+
+        // テキストエリアに反映
+        document.getElementById('dateInput').value = schedules.join('\n');
+        document.getElementById('imageUploadResult').textContent =
+            `${schedules.length}件の日程を取り込みました → テキスト欄に反映しました`;
+        document.getElementById('imageUploadResult').style.color = '#059669';
+
+        switchSubTab('text');
+        updateCalendarFromInput();
+
+    } catch(err) {
+        console.error('画像読み込みエラー:', err);
+        document.getElementById('imageUploadResult').textContent = '読み込みエラー：' + err.message;
+        document.getElementById('imageUploadResult').style.color = '#b91c1c';
+    }
 }
 
 // PDFファイルからテキストを抽出して日程を解析

@@ -54,6 +54,7 @@
                     <button class="tab-btn-sub active" onclick="switchSubTab('text')">📝 テキスト貼り付け</button>
                     <button class="tab-btn-sub" onclick="switchSubTab('excel')">📂 Excelファイル取り込み</button>
                     <button class="tab-btn-sub" onclick="switchSubTab('pdf')">📄 PDFファイル取り込み</button>
+                    <button class="tab-btn-sub" onclick="switchSubTab('image')">🖼️ 画像ファイル取り込み</button>
                 </div>
 
                 <!-- テキスト入力タブ -->
@@ -92,6 +93,19 @@
                     </div>
                     <div class="upload-result" id="pdfUploadResult"></div>
                     <p class="note">取り込んだ日付と時間はテキスト欄に反映されます。内容を確認・編集してから解析してください。</p>
+                </div>
+
+                <!-- 画像タブ -->
+                <div id="tab-image" class="tab-panel">
+                    <div class="upload-area" id="imageUploadArea" onclick="document.getElementById('scheduleImageFile').click()"
+                         ondragover="onImageDragOver(event)" ondragleave="onImageDragLeave(event)" ondrop="onImageDrop(event)">
+                        <input type="file" id="scheduleImageFile" accept="image/*" onchange="onImageFileSelect(event)">
+                        <div class="upload-icon">🐼🖼️</div>
+                        <div class="upload-text"><strong>クリックして画像を選択</strong>、またはここにドラッグ&ドロップ</div>
+                        <div class="upload-text" style="margin-top:4px;font-size:12px;color:#9ca3af;">PNG / JPG / JPEG などの画像ファイルに対応</div>
+                    </div>
+                    <div class="upload-result" id="imageUploadResult"></div>
+                    <p class="note">画像から文字を認識（OCR）して日付と時間を抽出します。テキスト欄に反映されますので、内容を確認・編集してから解析してください。</p>
                 </div>
             </div>
 
@@ -269,6 +283,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
