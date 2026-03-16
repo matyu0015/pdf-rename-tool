@@ -421,7 +421,8 @@ function extractSchedulesFromPdfText(text) {
     const words = text.split(/[\s\n]+/).filter(w => w.trim());
 
     let currentDate = null;
-    const datePattern = /(\d{1,2})月(\d{1,2})日/;
+    const datePattern1 = /(\d{1,2})月(\d{1,2})日/; // 3月12日形式
+    const datePattern2 = /(\d{4})\/(\d{1,2})\/(\d{1,2})/; // 2026/03/12形式
     const timePattern = /^(\d{1,2}):(\d{2})$/;
 
     console.log('=== 分割された単語 ===');
@@ -432,11 +433,21 @@ function extractSchedulesFromPdfText(text) {
         const word = words[i].trim();
         if (!word) continue;
 
-        // 日付を検出
-        const dateMatch = word.match(datePattern);
-        if (dateMatch) {
-            currentDate = `${dateMatch[1]}月${dateMatch[2]}日`;
-            console.log(`日付検出: ${currentDate}`);
+        // YYYY/MM/DD形式の日付を検出
+        const dateMatch2 = word.match(datePattern2);
+        if (dateMatch2) {
+            const month = parseInt(dateMatch2[2]);
+            const day = parseInt(dateMatch2[3]);
+            currentDate = `${month}月${day}日`;
+            console.log(`日付検出 (YYYY/MM/DD): ${word} → ${currentDate}`);
+            continue;
+        }
+
+        // M月D日形式の日付を検出
+        const dateMatch1 = word.match(datePattern1);
+        if (dateMatch1) {
+            currentDate = `${dateMatch1[1]}月${dateMatch1[2]}日`;
+            console.log(`日付検出 (M月D日): ${currentDate}`);
             continue;
         }
 
