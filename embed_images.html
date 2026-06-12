@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生写真埋め込みツール</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .section h2 {
+            font-size: 18px;
+            color: #495057;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section h2::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 20px;
+            background: #667eea;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .file-label:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .input-group input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button.process-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        button.process-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button.process-btn:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status h3 {
+            font-size: 16px;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .status-item {
+            padding: 8px 0;
+            font-size: 14px;
+            color: #6c757d;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .success {
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        .error {
+            color: #dc3545;
+            font-weight: 500;
+        }
+
+        .warning {
+            color: #ffc107;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .info-box h4 {
+            color: #0056b3;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            font-size: 13px;
+            color: #495057;
+        }
+
+        .info-box li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>学生写真埋め込みツール</h1>
+            <p>エクセルに学生IDに対応した写真を一括で埋め込みます</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>1. エクセルファイルをアップロード</h2>
+                <div class="file-input-wrapper">
+                    <input type="file" id="excelFile" accept=".xlsx,.xls">
+                    <label for="excelFile" class="file-label">エクセルファイルを選択</label>
+                </div>
+                <div id="excelInfo" class="file-info" style="display:none;"></div>
+                <div class="info-box">
+                    <h4>エクセルファイルの要件：</h4>
+                    <ul>
+                        <li>2シート構成のファイル</li>
+                        <li>2シート目のA列に学生IDが記載されている</li>
+                        <li>写真はB列に埋め込まれます</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>2. 写真フォルダを選択</h2>
+                <div class="file-input-wrapper">
+                    <input type="file" id="imageFolder" webkitdirectory directory multiple>
+                    <label for="imageFolder" class="file-label">写真フォルダを選択</label>
+                </div>
+                <div id="imageInfo" class="file-info" style="display:none;"></div>
+                <div class="info-box">
+                    <h4>写真ファイルの要件：</h4>
+                    <ul>
+                        <li>ファイル名が学生ID（例：12345.jpg）</li>
+                        <li>対応形式：JPG, JPEG, PNG</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>3. 埋め込み設定</h2>
+                <div class="input-group">
+                    <label for="startRow">埋め込み開始行（1から始まる行番号）:</label>
+                    <input type="number" id="startRow" min="2" value="2" placeholder="例: 2">
+                </div>
+                <div class="info-box">
+                    <h4>注意：</h4>
+                    <ul>
+                        <li>1行目は項目名（ヘッダー）として扱われます</li>
+                        <li>通常は2行目から開始してください</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <button class="process-btn" id="processBtn" disabled>写真を埋め込んで保存</button>
+                <div id="progress" style="display:none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width:0%">0%</div>
+                    </div>
+                </div>
+                <div id="status" style="display:none;" class="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let excelWorkbook = null;
+        let excelFileName = '';
+        let imageFiles = {};
+
+        document.getElementById('excelFile').addEventListener('change', handleExcelFile);
+        document.getElementById('imageFolder').addEventListener('change', handleImageFolder);
+        document.getElementById('processBtn').addEventListener('click', processEmbedding);
+
+        function handleExcelFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            excelFileName = file.name;
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = new ExcelJS.Workbook();
+
+                try {
+                    await workbook.xlsx.load(data);
+                    excelWorkbook = workbook;
+
+                    const sheetCount = workbook.worksheets.length;
+                    let studentIds = [];
+
+                    if (sheetCount >= 2) {
+                        const sheet2 = workbook.worksheets[1];
+                        sheet2.eachRow((row, rowNumber) => {
+                            if (rowNumber >= parseInt(document.getElementById('startRow').value)) {
+                                const studentId = row.getCell(1).value;
+                                if (studentId) studentIds.push(studentId);
+                            }
+                        });
+                    }
+
+                    document.getElementById('excelInfo').style.display = 'block';
+                    document.getElementById('excelInfo').innerHTML = `
+                        <div><strong>ファイル名:</strong> ${file.name}</div>
+                        <div><strong>シート数:</strong> ${sheetCount}</div>
+                        <div><strong>2シート目の学生ID数:</strong> ${studentIds.length}</div>
+                    `;
+
+                    checkReadyToProcess();
+                } catch (error) {
+                    alert('エクセルファイルの読み込みに失敗しました: ' + error.message);
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handleImageFolder(e) {
+            const files = Array.from(e.target.files);
+            imageFiles = {};
+
+            files.forEach(file => {
+                const ext = file.name.toLowerCase().split('.').pop();
+                if (['jpg', 'jpeg', 'png'].includes(ext)) {
+                    const studentId = file.name.split('.')[0];
+                    imageFiles[studentId] = file;
+                }
+            });
+
+            const imageCount = Object.keys(imageFiles).length;
+
+            document.getElementById('imageInfo').style.display = 'block';
+            document.getElementById('imageInfo').innerHTML = `
+                <div><strong>読み込まれた写真:</strong> ${imageCount}枚</div>
+                <div><strong>学生ID:</strong> ${Object.keys(imageFiles).slice(0, 5).join(', ')}${imageCount > 5 ? '...' : ''}</div>
+            `;
+
+            checkReadyToProcess();
+        }
+
+        function checkReadyToProcess() {
+            const hasExcel = excelWorkbook !== null;
+            const hasImages = Object.keys(imageFiles).length > 0;
+            document.getElementById('processBtn').disabled = !(hasExcel && hasImages);
+        }
+
+        async function processEmbedding() {
+            if (!excelWorkbook || Object.keys(imageFiles).length === 0) {
+                alert('エクセルファイルと写真フォルダの両方を選択してください');
+                return;
+            }
+
+            const startRow = parseInt(document.getElementById('startRow').value);
+            const sheet2 = excelWorkbook.worksheets[1];
+
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('status').style.display = 'block';
+            document.getElementById('processBtn').disabled = true;
+
+            let statusHTML = '<h3>処理状況</h3>';
+            let processedCount = 0;
+            let totalCount = 0;
+            let missingImages = [];
+
+            // カウント
+            sheet2.eachRow((row, rowNumber) => {
+                if (rowNumber >= startRow) {
+                    const studentId = row.getCell(1).value;
+                    if (studentId) totalCount++;
+                }
+            });
+
+            // 処理
+            for (let rowNumber = startRow; rowNumber <= sheet2.rowCount; rowNumber++) {
+                const row = sheet2.getRow(rowNumber);
+                const studentId = String(row.getCell(1).value || '').trim();
+
+                if (!studentId) continue;
+
+                if (imageFiles[studentId]) {
+                    try {
+                        const imageFile = imageFiles[studentId];
+                        const arrayBuffer = await imageFile.arrayBuffer();
+
+                        const ext = imageFile.name.toLowerCase().split('.').pop();
+                        const imageId = excelWorkbook.addImage({
+                            buffer: arrayBuffer,
+                            extension: ext === 'jpg' ? 'jpeg' : ext,
+                        });
+
+                        // B列に画像を配置
+                        // ExcelJSの座標は0ベースなので、rowNumberから1を引く
+                        // col: 1 = B列（0=A, 1=B）
+                        sheet2.addImage(imageId, {
+                            tl: { col: 1, row: rowNumber - 1 },
+                            ext: { width: 100, height: 100 }
+                        });
+
+                        // 行の高さを調整（画像が見えるように）
+                        row.height = 75;
+
+                        processedCount++;
+                        statusHTML += `<div class="status-item success">✓ ${studentId}: 写真を埋め込みました</div>`;
+                    } catch (error) {
+                        statusHTML += `<div class="status-item error">✗ ${studentId}: エラー - ${error.message}</div>`;
+                    }
+                } else {
+                    missingImages.push(studentId);
+                    statusHTML += `<div class="status-item warning">⚠ ${studentId}: 写真が見つかりません</div>`;
+                }
+
+                const progress = Math.round((processedCount + missingImages.length) / totalCount * 100);
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressFill').textContent = progress + '%';
+                document.getElementById('status').innerHTML = statusHTML;
+            }
+
+            // B列の幅を調整
+            sheet2.getColumn(2).width = 15;
+
+            // サマリーを追加
+            statusHTML += `
+                <div class="status-item" style="margin-top:15px; padding-top:15px; border-top:2px solid #667eea;">
+                    <strong>処理完了:</strong> ${processedCount}/${totalCount}枚の写真を埋め込みました
+                </div>
+            `;
+            if (missingImages.length > 0) {
+                statusHTML += `<div class="status-item warning"><strong>写真なし:</strong> ${missingImages.length}件</div>`;
+            }
+
+            document.getElementById('status').innerHTML = statusHTML;
+
+            // ファイルをダウンロード
+            const buffer = await excelWorkbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = excelFileName.replace(/\.xlsx?$/i, '_写真埋め込み.xlsx');
+            a.click();
+            URL.revokeObjectURL(url);
+
+            document.getElementById('processBtn').disabled = false;
+        }
+    </script>
+</body>
+</html>
