@@ -449,8 +449,8 @@
                             editAs: 'oneCell'
                         });
 
-                        // 行の高さを調整（画像が見えるように）
-                        row.height = 75;
+                        // 行の高さを調整（高さ150ピクセル相当）
+                        row.height = 113;
 
                         processedCount++;
                         statusHTML += `<div class="status-item success">✓ ${studentId}: 写真を埋め込みました</div>`;
@@ -468,8 +468,8 @@
                 document.getElementById('status').innerHTML = statusHTML;
             }
 
-            // B列の幅を調整
-            sheet2.getColumn(2).width = 15;
+            // B列の幅を調整（幅70ピクセル相当）
+            sheet2.getColumn(2).width = 10;
 
             // サマリーを追加
             statusHTML += `
