@@ -249,19 +249,19 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>ONE 提出物一覧リスト作成用</h1>
+            <h1>🌊 ONE 提出物一覧リスト作成用 🚢</h1>
         </div>
 
         <div class="content">
             <div class="section">
-                <h2>1. エクセルファイルをアップロード</h2>
+                <h2>⚓ 1. エクセルファイルをアップロード</h2>
                 <div class="file-input-wrapper">
                     <input type="file" id="excelFile" accept=".xlsx,.xls">
-                    <label for="excelFile" class="file-label">エクセルファイルを選択</label>
+                    <label for="excelFile" class="file-label">📋 エクセルファイルを選択</label>
                 </div>
                 <div id="excelInfo" class="file-info" style="display:none;"></div>
                 <div class="info-box">
-                    <h4>エクセルファイルの要件：</h4>
+                    <h4>🧭 対応条件はこちら：</h4>
                     <ul>
                         <li>2シート構成のファイル</li>
                         <li>2シート目のA列に学生IDが記載されている</li>
@@ -271,14 +271,14 @@
             </div>
 
             <div class="section">
-                <h2>2. 写真フォルダを選択</h2>
+                <h2>🛳️ 2. 写真フォルダを選択</h2>
                 <div class="file-input-wrapper">
                     <input type="file" id="imageFolder" webkitdirectory directory multiple>
-                    <label for="imageFolder" class="file-label">写真フォルダを選択</label>
+                    <label for="imageFolder" class="file-label">📸 写真フォルダを選択</label>
                 </div>
                 <div id="imageInfo" class="file-info" style="display:none;"></div>
                 <div class="info-box">
-                    <h4>写真ファイルの要件：</h4>
+                    <h4>🧭 対応条件はこちら：</h4>
                     <ul>
                         <li>ファイル名が学生ID（例：12345.jpg）</li>
                         <li>対応形式：JPG, JPEG, PNG</li>
@@ -287,13 +287,13 @@
             </div>
 
             <div class="section">
-                <h2>3. 埋め込み設定</h2>
+                <h2>⛵ 3. 埋め込み設定</h2>
                 <div class="input-group">
-                    <label for="startRow">埋め込み開始行（1から始まる行番号）:</label>
+                    <label for="startRow">📍 埋め込み開始行（1から始まる行番号）:</label>
                     <input type="number" id="startRow" min="2" value="2" placeholder="例: 2">
                 </div>
                 <div class="info-box">
-                    <h4>注意：</h4>
+                    <h4>⚠️ 注意：</h4>
                     <ul>
                         <li>1行目は項目名（ヘッダー）として扱われます</li>
                         <li>通常は2行目から開始してください</li>
@@ -302,7 +302,7 @@
             </div>
 
             <div class="section">
-                <button class="process-btn" id="processBtn" disabled>写真を埋め込んで保存</button>
+                <button class="process-btn" id="processBtn" disabled>🚀 写真を埋め込んで保存</button>
                 <div id="progress" style="display:none;">
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill" style="width:0%">0%</div>
