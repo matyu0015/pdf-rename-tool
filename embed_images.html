@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>学生写真埋め込みツール</title>
+    <title>ONE 提出物一覧リスト作成用</title>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <style>
         * {
@@ -14,7 +14,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FFE5F0 0%, #FFF5F9 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -29,7 +29,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #E91E8C 0%, #FF1493 100%);
             color: white;
             padding: 30px;
             text-align: center;
@@ -52,9 +52,9 @@
         .section {
             margin-bottom: 30px;
             padding: 20px;
-            background: #f8f9fa;
+            background: #FFF5F9;
             border-radius: 8px;
-            border: 2px solid #e9ecef;
+            border: 2px solid #FFD4E5;
         }
 
         .section h2 {
@@ -70,7 +70,7 @@
             display: inline-block;
             width: 4px;
             height: 20px;
-            background: #667eea;
+            background: #E91E8C;
             margin-right: 10px;
             border-radius: 2px;
         }
@@ -87,7 +87,7 @@
         .file-label {
             display: inline-block;
             padding: 12px 24px;
-            background: #667eea;
+            background: #E91E8C;
             color: white;
             border-radius: 6px;
             cursor: pointer;
@@ -96,18 +96,19 @@
         }
 
         .file-label:hover {
-            background: #5568d3;
+            background: #D11A7D;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 12px rgba(233, 30, 140, 0.4);
         }
 
         .file-info {
             margin-top: 10px;
             padding: 10px;
-            background: white;
+            background: #FFFDFE;
             border-radius: 4px;
             font-size: 14px;
             color: #495057;
+            border: 1px solid #FFD4E5;
         }
 
         .input-group {
@@ -132,13 +133,13 @@
 
         .input-group input[type="number"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #E91E8C;
         }
 
         button.process-btn {
             width: 100%;
             padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #E91E8C 0%, #FF1493 100%);
             color: white;
             border: none;
             border-radius: 8px;
@@ -151,7 +152,7 @@
 
         button.process-btn:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(233, 30, 140, 0.4);
         }
 
         button.process-btn:disabled {
@@ -164,7 +165,7 @@
             padding: 15px;
             background: white;
             border-radius: 6px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #E91E8C;
         }
 
         .status h3 {
@@ -210,7 +211,7 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #E91E8C 0%, #FF1493 100%);
             transition: width 0.3s;
             display: flex;
             align-items: center;
@@ -221,15 +222,15 @@
         }
 
         .info-box {
-            background: #e7f3ff;
-            border: 1px solid #b3d9ff;
+            background: #FFF0F7;
+            border: 1px solid #FFD4E5;
             border-radius: 6px;
             padding: 15px;
             margin-top: 15px;
         }
 
         .info-box h4 {
-            color: #0056b3;
+            color: #E91E8C;
             font-size: 14px;
             margin-bottom: 8px;
         }
@@ -248,8 +249,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>学生写真埋め込みツール</h1>
-            <p>エクセルに学生IDに対応した写真を一括で埋め込みます</p>
+            <h1>ONE 提出物一覧リスト作成用</h1>
         </div>
 
         <div class="content">
