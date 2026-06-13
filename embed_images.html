@@ -439,7 +439,7 @@
                             extension: ext === 'jpg' ? 'jpeg' : ext,
                         });
 
-                        // B列に画像を配置（セルのサイズにぴったり合わせる）
+                        // B列に画像を配置（既存のセルサイズに合わせる）
                         // ExcelJSの座標は0ベースなので、rowNumberから1を引く
                         // tl (top-left): 左上の座標、br (bottom-right): 右下の座標
                         // col: 1 = B列（0=A, 1=B）
@@ -450,8 +450,8 @@
                             editAs: 'oneCell'
                         });
 
-                        // 行の高さを調整（高さ150ピクセル相当 = 約113ポイント）
-                        row.height = 113;
+                        // 行の高さは既存のものを保持（変更しない）
+                        // row.height = 113; // この行を削除して既存の高さを維持
 
                         processedCount++;
                         statusHTML += `<div class="status-item success">✓ ${studentId}: 写真を埋め込みました</div>`;
@@ -469,8 +469,8 @@
                 document.getElementById('status').innerHTML = statusHTML;
             }
 
-            // B列の幅を調整（C列と同じ幅に設定）
-            sheet2.getColumn(2).width = 15;
+            // B列の幅は既存のものを保持（変更しない）
+            // sheet2.getColumn(2).width = 15; // この行を削除して既存の幅を維持
 
             // サマリーを追加
             statusHTML += `
