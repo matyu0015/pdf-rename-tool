@@ -469,8 +469,8 @@
                 document.getElementById('status').innerHTML = statusHTML;
             }
 
-            // B列の幅を調整（幅70ピクセル相当 = 約9.4文字幅）
-            sheet2.getColumn(2).width = 9.4;
+            // B列の幅を調整（C列と同じ幅に設定）
+            sheet2.getColumn(2).width = 15;
 
             // サマリーを追加
             statusHTML += `
