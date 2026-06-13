@@ -439,17 +439,18 @@
                             extension: ext === 'jpg' ? 'jpeg' : ext,
                         });
 
-                        // B列に画像を配置（セルのサイズに合わせる）
+                        // B列に画像を配置（セルのサイズにぴったり合わせる）
                         // ExcelJSの座標は0ベースなので、rowNumberから1を引く
                         // tl (top-left): 左上の座標、br (bottom-right): 右下の座標
                         // col: 1 = B列（0=A, 1=B）
+                        // オフセットを0にすることでセルにぴったり合わせる
                         sheet2.addImage(imageId, {
-                            tl: { col: 1, row: rowNumber - 1 },
-                            br: { col: 2, row: rowNumber },
+                            tl: { col: 1, row: rowNumber - 1, colOff: 0, rowOff: 0 },
+                            br: { col: 2, row: rowNumber, colOff: 0, rowOff: 0 },
                             editAs: 'oneCell'
                         });
 
-                        // 行の高さを調整（高さ150ピクセル相当）
+                        // 行の高さを調整（高さ150ピクセル相当 = 約113ポイント）
                         row.height = 113;
 
                         processedCount++;
@@ -468,8 +469,8 @@
                 document.getElementById('status').innerHTML = statusHTML;
             }
 
-            // B列の幅を調整（幅70ピクセル相当）
-            sheet2.getColumn(2).width = 10;
+            // B列の幅を調整（幅70ピクセル相当 = 約9.4文字幅）
+            sheet2.getColumn(2).width = 9.4;
 
             // サマリーを追加
             statusHTML += `
