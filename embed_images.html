@@ -372,7 +372,10 @@
             files.forEach(file => {
                 const ext = file.name.toLowerCase().split('.').pop();
                 if (['jpg', 'jpeg', 'png'].includes(ext)) {
-                    const studentId = file.name.split('.')[0];
+                    // ファイル名から拡張子を除いた部分を取得
+                    const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
+                    // 最初の10桁を学生IDとして抽出
+                    const studentId = nameWithoutExt.substring(0, 10);
                     imageFiles[studentId] = file;
                 }
             });
@@ -423,9 +426,12 @@
             // 処理
             for (let rowNumber = startRow; rowNumber <= sheet2.rowCount; rowNumber++) {
                 const row = sheet2.getRow(rowNumber);
-                const studentId = String(row.getCell(1).value || '').trim();
+                const studentIdRaw = String(row.getCell(1).value || '').trim();
 
-                if (!studentId) continue;
+                if (!studentIdRaw) continue;
+
+                // エクセルのIDも最初の10桁を使用（10桁未満の場合はそのまま）
+                const studentId = studentIdRaw.substring(0, 10);
 
                 if (imageFiles[studentId]) {
                     try {
