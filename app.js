@@ -537,38 +537,101 @@ async function readSchedulePdfFile(file) {
     }
 }
 
-// 抽出した日程を選択UIとして表示
+// 抽出した日程を選択UIとして表示（日付ごとにグループ化）
 function displayPdfScheduleSelection(schedules) {
     const listDiv = document.getElementById('pdfScheduleList');
     listDiv.innerHTML = '';
 
+    // 日付ごとにグループ化
+    const groupedByDate = {};
     schedules.forEach((schedule, index) => {
-        const itemDiv = document.createElement('div');
-        itemDiv.style.padding = '8px 12px';
-        itemDiv.style.borderBottom = '1px solid #e5e5df';
-        itemDiv.style.display = 'flex';
-        itemDiv.style.alignItems = 'center';
-        itemDiv.style.gap = '10px';
+        // 日付部分を抽出（例: "2026/06/30 10:00" → "2026/06/30"）
+        const dateMatch = schedule.match(/(\d{4}\/\d{1,2}\/\d{1,2}|\d{1,2}月\d{1,2}日)/);
+        const dateKey = dateMatch ? dateMatch[0] : 'その他';
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = `pdf-schedule-${index}`;
-        checkbox.value = schedule;
-        checkbox.style.cursor = 'pointer';
-        checkbox.style.width = '16px';
-        checkbox.style.height = '16px';
+        if (!groupedByDate[dateKey]) {
+            groupedByDate[dateKey] = [];
+        }
+        groupedByDate[dateKey].push({ schedule, index });
+    });
 
-        const label = document.createElement('label');
-        label.htmlFor = `pdf-schedule-${index}`;
-        label.textContent = schedule;
-        label.style.cursor = 'pointer';
-        label.style.fontSize = '0.9em';
-        label.style.color = '#4a4a40';
-        label.style.flex = '1';
+    // 日付順にソート
+    const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+        // 日付を比較可能な形式に変換
+        const parseDate = (dateStr) => {
+            if (dateStr.includes('/')) {
+                return new Date(dateStr);
+            } else if (dateStr.includes('月')) {
+                const match = dateStr.match(/(\d{1,2})月(\d{1,2})日/);
+                if (match) {
+                    const year = new Date().getFullYear();
+                    return new Date(year, parseInt(match[1]) - 1, parseInt(match[2]));
+                }
+            }
+            return new Date(0);
+        };
+        return parseDate(a) - parseDate(b);
+    });
 
-        itemDiv.appendChild(checkbox);
-        itemDiv.appendChild(label);
-        listDiv.appendChild(itemDiv);
+    // 日付ごとに表示
+    sortedDates.forEach(dateKey => {
+        // 日付ヘッダー
+        const dateHeaderDiv = document.createElement('div');
+        dateHeaderDiv.style.padding = '10px 12px';
+        dateHeaderDiv.style.background = '#f0f0eb';
+        dateHeaderDiv.style.fontWeight = '600';
+        dateHeaderDiv.style.fontSize = '0.95em';
+        dateHeaderDiv.style.color = '#5a6650';
+        dateHeaderDiv.style.borderBottom = '2px solid #d8d8d0';
+        dateHeaderDiv.style.position = 'sticky';
+        dateHeaderDiv.style.top = '0';
+        dateHeaderDiv.textContent = dateKey;
+        listDiv.appendChild(dateHeaderDiv);
+
+        // その日付の日程を時間順にソート
+        const sortedSchedules = groupedByDate[dateKey].sort((a, b) => {
+            // 時間部分を抽出して比較
+            const timeA = a.schedule.match(/(\d{1,2}):(\d{2})/);
+            const timeB = b.schedule.match(/(\d{1,2}):(\d{2})/);
+            if (timeA && timeB) {
+                const minutesA = parseInt(timeA[1]) * 60 + parseInt(timeA[2]);
+                const minutesB = parseInt(timeB[1]) * 60 + parseInt(timeB[2]);
+                return minutesA - minutesB;
+            }
+            return 0;
+        });
+
+        // 各日程のチェックボックス
+        sortedSchedules.forEach(({ schedule, index }) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.padding = '8px 12px 8px 24px';
+            itemDiv.style.borderBottom = '1px solid #e5e5df';
+            itemDiv.style.display = 'flex';
+            itemDiv.style.alignItems = 'center';
+            itemDiv.style.gap = '10px';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `pdf-schedule-${index}`;
+            checkbox.value = schedule;
+            checkbox.style.cursor = 'pointer';
+            checkbox.style.width = '16px';
+            checkbox.style.height = '16px';
+
+            const label = document.createElement('label');
+            label.htmlFor = `pdf-schedule-${index}`;
+            // 日付部分を除いた時間のみを表示
+            const timeOnly = schedule.replace(/(\d{4}\/\d{1,2}\/\d{1,2}|\d{1,2}月\d{1,2}日)\s*/, '');
+            label.textContent = timeOnly;
+            label.style.cursor = 'pointer';
+            label.style.fontSize = '0.85em';
+            label.style.color = '#4a4a40';
+            label.style.flex = '1';
+
+            itemDiv.appendChild(checkbox);
+            itemDiv.appendChild(label);
+            listDiv.appendChild(itemDiv);
+        });
     });
 
     // 全選択/全解除ボタンを追加
@@ -578,6 +641,9 @@ function displayPdfScheduleSelection(schedules) {
     controlDiv.style.gap = '10px';
     controlDiv.style.borderTop = '2px solid #d8d8d0';
     controlDiv.style.marginTop = '10px';
+    controlDiv.style.position = 'sticky';
+    controlDiv.style.bottom = '0';
+    controlDiv.style.background = '#fafaf8';
 
     const selectAllBtn = document.createElement('button');
     selectAllBtn.textContent = '全選択';
@@ -586,7 +652,8 @@ function displayPdfScheduleSelection(schedules) {
     selectAllBtn.style.padding = '6px 12px';
     selectAllBtn.onclick = () => {
         schedules.forEach((_, index) => {
-            document.getElementById(`pdf-schedule-${index}`).checked = true;
+            const checkbox = document.getElementById(`pdf-schedule-${index}`);
+            if (checkbox) checkbox.checked = true;
         });
     };
 
@@ -597,7 +664,8 @@ function displayPdfScheduleSelection(schedules) {
     deselectAllBtn.style.padding = '6px 12px';
     deselectAllBtn.onclick = () => {
         schedules.forEach((_, index) => {
-            document.getElementById(`pdf-schedule-${index}`).checked = false;
+            const checkbox = document.getElementById(`pdf-schedule-${index}`);
+            if (checkbox) checkbox.checked = false;
         });
     };
 
