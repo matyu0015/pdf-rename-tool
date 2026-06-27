@@ -441,11 +441,14 @@ async function readScheduleImageFile(file) {
     }
 }
 
+// グローバル変数（PDF選択用）
+let pdfExtractedSchedules = [];
+
 // PDFファイルからテキストを抽出して日程を解析
 async function readSchedulePdfFile(file) {
     try {
         document.getElementById('pdfUploadResult').textContent = 'PDFを読み込み中...';
-        document.getElementById('pdfUploadResult').style.color = '#667eea';
+        document.getElementById('pdfUploadResult').style.color = '#5a6550';
 
         // PDFファイルを読み込み
         const arrayBuffer = await file.arrayBuffer();
@@ -456,11 +459,26 @@ async function readSchedulePdfFile(file) {
         });
         const pdf = await loadingTask.promise;
 
+        // 最初のページをプレビュー表示
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.getElementById('pdfPreviewCanvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({
+            canvasContext: context,
+            viewport: viewport
+        }).promise;
+
         // 全ページからテキストを抽出
         let allText = '';
+        let allTextItems = [];
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
+            allTextItems.push(...textContent.items);
             const pageText = textContent.items.map(item => item.str).join(' ');
             allText += pageText + '\n';
         }
@@ -480,24 +498,130 @@ async function readSchedulePdfFile(file) {
 
         if (schedules.length === 0) {
             document.getElementById('pdfUploadResult').textContent = '日付データが見つかりませんでした。';
-            document.getElementById('pdfUploadResult').style.color = '#b91c1c';
+            document.getElementById('pdfUploadResult').style.color = '#8a6060';
             return;
         }
 
-        // テキストエリアに反映
-        document.getElementById('dateInput').value = schedules.join('\n');
-        document.getElementById('pdfUploadResult').textContent =
-            `${schedules.length}件の日程を取り込みました → テキスト欄に反映しました`;
-        document.getElementById('pdfUploadResult').style.color = '#059669';
+        // グローバル変数に保存
+        pdfExtractedSchedules = schedules;
 
-        switchSubTab('text');
-        updateCalendarFromInput();
+        // 選択UIを表示
+        displayPdfScheduleSelection(schedules);
+
+        document.getElementById('pdfUploadResult').textContent =
+            `${schedules.length}件の日程を抽出しました。必要な日程を選択してください。`;
+        document.getElementById('pdfUploadResult').style.color = '#5a6550';
+        document.getElementById('pdfPreviewSection').style.display = 'block';
 
     } catch(err) {
         console.error('PDF読み込みエラー:', err);
         document.getElementById('pdfUploadResult').textContent = '読み込みエラー：' + err.message;
-        document.getElementById('pdfUploadResult').style.color = '#b91c1c';
+        document.getElementById('pdfUploadResult').style.color = '#8a6060';
     }
+}
+
+// 抽出した日程を選択UIとして表示
+function displayPdfScheduleSelection(schedules) {
+    const listDiv = document.getElementById('pdfScheduleList');
+    listDiv.innerHTML = '';
+
+    schedules.forEach((schedule, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.style.padding = '8px 12px';
+        itemDiv.style.borderBottom = '1px solid #e5e5df';
+        itemDiv.style.display = 'flex';
+        itemDiv.style.alignItems = 'center';
+        itemDiv.style.gap = '10px';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `pdf-schedule-${index}`;
+        checkbox.value = schedule;
+        checkbox.style.cursor = 'pointer';
+        checkbox.style.width = '16px';
+        checkbox.style.height = '16px';
+
+        const label = document.createElement('label');
+        label.htmlFor = `pdf-schedule-${index}`;
+        label.textContent = schedule;
+        label.style.cursor = 'pointer';
+        label.style.fontSize = '0.9em';
+        label.style.color = '#4a4a40';
+        label.style.flex = '1';
+
+        itemDiv.appendChild(checkbox);
+        itemDiv.appendChild(label);
+        listDiv.appendChild(itemDiv);
+    });
+
+    // 全選択/全解除ボタンを追加
+    const controlDiv = document.createElement('div');
+    controlDiv.style.padding = '12px';
+    controlDiv.style.display = 'flex';
+    controlDiv.style.gap = '10px';
+    controlDiv.style.borderTop = '2px solid #d8d8d0';
+    controlDiv.style.marginTop = '10px';
+
+    const selectAllBtn = document.createElement('button');
+    selectAllBtn.textContent = '全選択';
+    selectAllBtn.className = 'btn';
+    selectAllBtn.style.fontSize = '0.85em';
+    selectAllBtn.style.padding = '6px 12px';
+    selectAllBtn.onclick = () => {
+        schedules.forEach((_, index) => {
+            document.getElementById(`pdf-schedule-${index}`).checked = true;
+        });
+    };
+
+    const deselectAllBtn = document.createElement('button');
+    deselectAllBtn.textContent = '全解除';
+    deselectAllBtn.className = 'btn';
+    deselectAllBtn.style.fontSize = '0.85em';
+    deselectAllBtn.style.padding = '6px 12px';
+    deselectAllBtn.onclick = () => {
+        schedules.forEach((_, index) => {
+            document.getElementById(`pdf-schedule-${index}`).checked = false;
+        });
+    };
+
+    controlDiv.appendChild(selectAllBtn);
+    controlDiv.appendChild(deselectAllBtn);
+    listDiv.appendChild(controlDiv);
+}
+
+// 選択した日程をテキスト欄に追加
+function addSelectedSchedulesToInput() {
+    const selectedSchedules = [];
+
+    pdfExtractedSchedules.forEach((schedule, index) => {
+        const checkbox = document.getElementById(`pdf-schedule-${index}`);
+        if (checkbox && checkbox.checked) {
+            selectedSchedules.push(schedule);
+        }
+    });
+
+    if (selectedSchedules.length === 0) {
+        alert('日程を選択してください');
+        return;
+    }
+
+    // テキストエリアに追加
+    const dateInput = document.getElementById('dateInput');
+    const currentValue = dateInput.value.trim();
+    const newValue = currentValue
+        ? currentValue + '\n' + selectedSchedules.join('\n')
+        : selectedSchedules.join('\n');
+
+    dateInput.value = newValue;
+
+    // テキストタブに切り替え
+    switchSubTab('text');
+    updateCalendarFromInput();
+
+    // 成功メッセージ
+    document.getElementById('pdfUploadResult').textContent =
+        `${selectedSchedules.length}件の日程をテキスト欄に追加しました`;
+    document.getElementById('pdfUploadResult').style.color = '#5a6550';
 }
 
 // PDFから抽出したテキストを解析して日程リストを作成
