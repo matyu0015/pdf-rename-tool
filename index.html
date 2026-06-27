@@ -85,6 +85,17 @@
 
                 <!-- PDFタブ -->
                 <div id="tab-pdf" class="tab-panel">
+                    <!-- 色つきセル抽出モードトグル -->
+                    <div style="margin-bottom:15px; padding:12px; background:#fafaf8; border:1px solid #e5e5df; border-radius:6px;">
+                        <div class="toggle-row" style="margin-bottom:0;">
+                            <label class="toggle">
+                                <input type="checkbox" id="pdfManualSelectionMode">
+                                <span class="slider"></span>
+                            </label>
+                            <span class="toggle-label">色つきセル抽出モード（プレビューを見ながら手動選択）</span>
+                        </div>
+                    </div>
+
                     <div class="upload-area" id="pdfUploadArea" onclick="document.getElementById('schedulePdfFile').click()"
                          ondragover="onPdfDragOver(event)" ondragleave="onPdfDragLeave(event)" ondrop="onPdfDrop(event)">
                         <input type="file" id="schedulePdfFile" accept=".pdf" onchange="onPdfFileSelect(event)">

@@ -450,6 +450,9 @@ async function readSchedulePdfFile(file) {
         document.getElementById('pdfUploadResult').textContent = 'PDFを読み込み中...';
         document.getElementById('pdfUploadResult').style.color = '#5a6550';
 
+        // モード確認
+        const manualMode = document.getElementById('pdfManualSelectionMode').checked;
+
         // PDFファイルを読み込み
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({
@@ -459,26 +462,11 @@ async function readSchedulePdfFile(file) {
         });
         const pdf = await loadingTask.promise;
 
-        // 最初のページをプレビュー表示
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({ scale: 1.5 });
-        const canvas = document.getElementById('pdfPreviewCanvas');
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        await page.render({
-            canvasContext: context,
-            viewport: viewport
-        }).promise;
-
         // 全ページからテキストを抽出
         let allText = '';
-        let allTextItems = [];
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-            allTextItems.push(...textContent.items);
             const pageText = textContent.items.map(item => item.str).join(' ');
             allText += pageText + '\n';
         }
@@ -502,16 +490,45 @@ async function readSchedulePdfFile(file) {
             return;
         }
 
-        // グローバル変数に保存
-        pdfExtractedSchedules = schedules;
+        if (manualMode) {
+            // 色つきセル抽出モード：プレビューと選択UIを表示
+            // 最初のページをプレビュー表示
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.getElementById('pdfPreviewCanvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
 
-        // 選択UIを表示
-        displayPdfScheduleSelection(schedules);
+            await page.render({
+                canvasContext: context,
+                viewport: viewport
+            }).promise;
 
-        document.getElementById('pdfUploadResult').textContent =
-            `${schedules.length}件の日程を抽出しました。必要な日程を選択してください。`;
-        document.getElementById('pdfUploadResult').style.color = '#5a6550';
-        document.getElementById('pdfPreviewSection').style.display = 'block';
+            // グローバル変数に保存
+            pdfExtractedSchedules = schedules;
+
+            // 選択UIを表示
+            displayPdfScheduleSelection(schedules);
+
+            document.getElementById('pdfUploadResult').textContent =
+                `${schedules.length}件の日程を抽出しました。必要な日程を選択してください。`;
+            document.getElementById('pdfUploadResult').style.color = '#5a6550';
+            document.getElementById('pdfPreviewSection').style.display = 'block';
+
+        } else {
+            // 通常モード：自動で全てテキスト欄に反映
+            document.getElementById('pdfPreviewSection').style.display = 'none';
+
+            // テキストエリアに反映
+            document.getElementById('dateInput').value = schedules.join('\n');
+            document.getElementById('pdfUploadResult').textContent =
+                `${schedules.length}件の日程を取り込みました → テキスト欄に反映しました`;
+            document.getElementById('pdfUploadResult').style.color = '#5a6550';
+
+            switchSubTab('text');
+            updateCalendarFromInput();
+        }
 
     } catch(err) {
         console.error('PDF読み込みエラー:', err);
