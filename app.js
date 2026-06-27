@@ -747,6 +747,14 @@ function addSelectedSchedulesToInput() {
 
 // 座標情報を使って、追加情報がある時間帯を検出
 function detectSchedulesWithAdditionalInfo(textItems, schedules) {
+    console.log('=== PDF列構造デバッグ ===');
+
+    // 最初の数行のテキストアイテムを詳しく出力
+    const firstRow = textItems.slice(0, 20);
+    firstRow.forEach(item => {
+        console.log(`テキスト: "${item.str}" | X座標: ${item.transform[4].toFixed(1)} | Y座標: ${item.transform[5].toFixed(1)}`);
+    });
+
     const schedulesWithFlags = schedules.map(schedule => {
         // 時間部分を抽出（例: "10:00" または "10:00〜10:20"）
         const timeMatch = schedule.match(/(\d{1,2}:\d{2})/g);
@@ -761,32 +769,54 @@ function detectSchedulesWithAdditionalInfo(textItems, schedules) {
 
         if (timeItems.length === 0) return { schedule, hasInfo: false };
 
-        // 時間と同じY座標（±5の範囲）にある他のテキストを探す
+        // 時間と同じY座標（±5の範囲）にある、面接内容列のテキストを探す
         let hasAdditionalInfo = false;
         timeItems.forEach(timeItem => {
             const timeY = timeItem.transform[5]; // Y座標
             const timeX = timeItem.transform[4]; // X座標
 
-            // 同じ行（Y座標が近い）で、時間の右側にあるテキストを探す
+            console.log(`\n時間 "${timeStr}" の位置: X=${timeX.toFixed(1)}, Y=${timeY.toFixed(1)}`);
+
+            // 同じ行のすべてのアイテムを取得してデバッグ
             const sameRowItems = textItems.filter(item => {
                 const itemY = item.transform[5];
-                const itemX = item.transform[4];
-                const isNearY = Math.abs(itemY - timeY) < 5; // Y座標が近い
-                const isRightSide = itemX > timeX + 30; // 時間の右側
-                const isNotTime = !/^\d{1,2}:\d{2}$/.test(item.str.trim()); // 時間形式でない
-                const hasContent = item.str.trim().length > 0; // 空でない
-                return isNearY && isRightSide && isNotTime && hasContent;
+                return Math.abs(itemY - timeY) < 5; // Y座標が近い
             });
 
-            if (sameRowItems.length > 0) {
+            console.log(`同じ行のアイテム:`, sameRowItems.map(i => `"${i.str}"(X:${i.transform[4].toFixed(1)})`).join(', '));
+
+            // 面接内容列を判定：終了時間の後で、担当・応接列ではないテキスト
+            // 列の構造: 日付 → 曜日 → 開始時間 → 終了時間 → [面接内容 → 担当 → 応接] × 3グループ
+            const interviewContentItems = sameRowItems.filter(item => {
+                const itemX = item.transform[4];
+                const itemText = item.str.trim();
+
+                // 終了時間より右側
+                const isRightOfTime = itemX > timeX + 50;
+                // 空でない
+                const hasContent = itemText.length > 0;
+                // 時間形式でない
+                const isNotTime = !/^\d{1,2}:\d{2}/.test(itemText);
+                // 曜日でない
+                const isNotDayOfWeek = !/(月|火|水|木|金|土|日)/.test(itemText);
+                // 日付でない
+                const isNotDate = !/\d{1,2}\/\d{1,2}/.test(itemText);
+
+                return isRightOfTime && hasContent && isNotTime && isNotDayOfWeek && isNotDate;
+            });
+
+            if (interviewContentItems.length > 0) {
                 hasAdditionalInfo = true;
-                console.log(`📌 ${schedule} に追加情報あり:`, sameRowItems.map(i => i.str).join(' '));
+                console.log(`✅ ${schedule} に面接内容あり:`, interviewContentItems.map(i => `"${i.str}"`).join(', '));
+            } else {
+                console.log(`❌ ${schedule} は面接内容なし`);
             }
         });
 
         return { schedule, hasInfo: hasAdditionalInfo };
     });
 
+    console.log('======================');
     return schedulesWithFlags;
 }
 
