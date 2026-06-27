@@ -607,32 +607,78 @@ function extractDatesFromSheet(ws) {
     }
 
     const dateColCandidates = new Set();
+    const timeColCandidates = new Set();
+
     for (let R = range.s.r; R <= range.e.r; R++) {
         for (let C = range.s.c; C <= range.e.c; C++) {
             const v = grid[R][C];
             if (v && looksLikeDate(v)) dateColCandidates.add(C);
+            if (v && looksLikeTime(v)) timeColCandidates.add(C);
         }
     }
 
     if (dateColCandidates.size === 0) return [];
 
     const dateCol = Math.min(...dateColCandidates);
-    const timeCol = dateCol + 1;
+
+    // 時間列を検出：日付列より右側で、時間データがある列を探す
+    let timeCol = null;
+    for (const col of Array.from(timeColCandidates).sort((a, b) => a - b)) {
+        if (col > dateCol) {
+            timeCol = col;
+            break;
+        }
+    }
+
+    console.log('=== extractDatesFromSheet デバッグ ===');
+    console.log('日付列:', dateCol);
+    console.log('時間列:', timeCol);
+
     const results = [];
     const seen = new Set();
+    let currentDate = null;  // 現在の日付を記憶
 
     for (let R = range.s.r; R <= range.e.r; R++) {
         const dateVal = grid[R][dateCol];
-        if (!dateVal || !looksLikeDate(dateVal)) continue;
 
-        const timeVal = (timeCol <= range.e.c) ? grid[R][timeCol] : null;
-        const timeStr = timeVal && looksLikeTime(timeVal) ? timeVal.trim() : '';
+        // 日付が見つかったら記憶
+        if (dateVal && looksLikeDate(dateVal)) {
+            currentDate = dateVal;
+            console.log(`行${R + 1}: 日付を検出 - ${currentDate}`);
+        }
 
-        const key = dateVal + '|' + timeStr;
-        if (seen.has(key)) continue;
-        seen.add(key);
+        // 時間列がある場合、時間を確認
+        if (timeCol !== null && currentDate) {
+            const timeVal = grid[R][timeCol];
+            if (timeVal && looksLikeTime(timeVal)) {
+                const timeStr = timeVal.trim();
+                const key = currentDate + '|' + timeStr;
 
-        results.push(timeStr ? `${dateVal} ${timeStr}` : dateVal);
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    const result = `${currentDate} ${timeStr}`;
+                    results.push(result);
+                    console.log(`行${R + 1}: 時間を検出 - ${timeStr} → 結果: ${result}`);
+                }
+            }
+        }
+    }
+
+    console.log('最終結果:', results);
+    console.log('===================================');
+
+    // 結果が0件の場合は、日付のみでも返す（後方互換性）
+    if (results.length === 0) {
+        for (let R = range.s.r; R <= range.e.r; R++) {
+            const dateVal = grid[R][dateCol];
+            if (dateVal && looksLikeDate(dateVal)) {
+                const key = dateVal + '|';
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    results.push(dateVal);
+                }
+            }
+        }
     }
 
     return results;
@@ -1054,16 +1100,12 @@ function renderTable(rows, nBefore, mergeStartTime = false, mergeDeadlineTime = 
         const warn = r.isHoliday ? '<span class="badge badge-red">祝日</span>' :
                       r.isWeekend ? '<span class="badge">休日</span>' : '';
 
-        // 開始時間のみを抽出（例: "09:00〜10:00" → "09:00"）
-        let startTime = '';
-        if (r.timeSlot) {
-            const match = r.timeSlot.match(/^(\d{2}:\d{2})/);
-            startTime = match ? match[1] : '';
-        }
+        // 時間範囲全体または開始時間を使用
+        const timeToDisplay = r.timeSlot || '';
 
-        // 実施日の表示（開始時間を結合する場合）
-        const dateDisplay = mergeStartTime && startTime
-            ? `${r.dateStr} ${startTime}`
+        // 実施日の表示（時間を結合する場合）
+        const dateDisplay = mergeStartTime && timeToDisplay
+            ? `${r.dateStr} ${timeToDisplay}`
             : r.dateStr;
 
         let tds = `<td>${dateDisplay}</td><td>${r.dayOfWeek}</td>`;
@@ -1103,16 +1145,12 @@ function downloadExcel() {
     const dataRows = currentData.map(r => {
         const warn = r.isHoliday ? '祝日' : r.isWeekend ? '休日' : '';
 
-        // 開始時間のみを抽出（例: "09:00〜10:00" → "09:00"）
-        let startTime = '';
-        if (r.timeSlot) {
-            const match = r.timeSlot.match(/^(\d{2}:\d{2})/);
-            startTime = match ? match[1] : '';
-        }
+        // 時間範囲全体または開始時間を使用
+        const timeToDisplay = r.timeSlot || '';
 
-        // 実施日の表示（開始時間を結合する場合）
-        const dateDisplay = mergeStartTime && startTime
-            ? `${r.dateStr} ${startTime}`
+        // 実施日の表示（時間を結合する場合）
+        const dateDisplay = mergeStartTime && timeToDisplay
+            ? `${r.dateStr} ${timeToDisplay}`
             : r.dateStr;
 
         const row = [dateDisplay, r.dayOfWeek, warn];
