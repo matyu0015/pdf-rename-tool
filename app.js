@@ -522,15 +522,20 @@ async function readSchedulePdfFile(file) {
             // 初期ズーム70%で表示
             renderPdfWithZoom(70);
 
-            // ズームスライダーのイベントリスナー
+            // ズームスライダーのイベントリスナー（重複を避けるため削除してから追加）
             const zoomSlider = document.getElementById('pdfZoomSlider');
             const zoomValue = document.getElementById('pdfZoomValue');
 
-            zoomSlider.oninput = function() {
+            // 既存のイベントリスナーを削除
+            const newZoomSlider = zoomSlider.cloneNode(true);
+            zoomSlider.parentNode.replaceChild(newZoomSlider, zoomSlider);
+
+            // 新しいイベントリスナーを設定
+            newZoomSlider.addEventListener('input', function() {
                 const zoom = parseInt(this.value);
                 zoomValue.textContent = zoom + '%';
                 renderPdfWithZoom(zoom);
-            };
+            });
 
             // グローバル変数に保存
             pdfExtractedSchedules = schedulesWithInfo;
@@ -783,11 +788,12 @@ function detectSchedulesWithAdditionalInfo(textItems, schedules) {
                 return Math.abs(itemY - timeY) < 5; // Y座標が近い
             });
 
-            console.log(`同じ行のアイテム:`, sameRowItems.map(i => `"${i.str}"(X:${i.transform[4].toFixed(1)})`).join(', '));
+            // 同じ行のアイテムをX座標順にソート
+            const sortedRowItems = sameRowItems.sort((a, b) => a.transform[4] - b.transform[4]);
+            console.log(`同じ行のアイテム（X座標順）:`, sortedRowItems.map(i => `"${i.str}"(X:${i.transform[4].toFixed(1)})`).join(', '));
 
-            // 面接内容列を判定：終了時間の後で、担当・応接列ではないテキスト
-            // 列の構造: 日付 → 曜日 → 開始時間 → 終了時間 → [面接内容 → 担当 → 応接] × 3グループ
-            const interviewContentItems = sameRowItems.filter(item => {
+            // 終了時間より右側のアイテムだけを抽出
+            const itemsAfterTime = sortedRowItems.filter(item => {
                 const itemX = item.transform[4];
                 const itemText = item.str.trim();
 
@@ -805,9 +811,24 @@ function detectSchedulesWithAdditionalInfo(textItems, schedules) {
                 return isRightOfTime && hasContent && isNotTime && isNotDayOfWeek && isNotDate;
             });
 
-            if (interviewContentItems.length > 0) {
+            console.log(`終了時間より右側のアイテム:`, itemsAfterTime.map(i => `"${i.str}"(X:${i.transform[4].toFixed(1)})`).join(', '));
+
+            // 列の構造: [面接内容 → 担当 → 応接] × 3グループ
+            // 3列ごとに区切って、各グループの最初の列（面接内容）だけをチェック
+            // つまり、インデックス 0, 3, 6 の列に情報があるか確認
+            const interviewContentColumns = [0, 3, 6]; // 面接内容列のインデックス
+            let hasInterviewContent = false;
+
+            interviewContentColumns.forEach(colIndex => {
+                if (itemsAfterTime[colIndex] && itemsAfterTime[colIndex].str.trim().length > 0) {
+                    hasInterviewContent = true;
+                    console.log(`✅ グループ${Math.floor(colIndex/3) + 1}の面接内容: "${itemsAfterTime[colIndex].str}"`);
+                }
+            });
+
+            if (hasInterviewContent) {
                 hasAdditionalInfo = true;
-                console.log(`✅ ${schedule} に面接内容あり:`, interviewContentItems.map(i => `"${i.str}"`).join(', '));
+                console.log(`✅ ${schedule} に面接内容あり`);
             } else {
                 console.log(`❌ ${schedule} は面接内容なし`);
             }
