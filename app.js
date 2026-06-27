@@ -443,6 +443,24 @@ async function readScheduleImageFile(file) {
 
 // グローバル変数（PDF選択用）
 let pdfExtractedSchedules = [];
+let currentPdfPage = null; // 現在のPDFページを保持
+
+// PDFを指定のズームで描画
+function renderPdfWithZoom(zoomPercent) {
+    if (!currentPdfPage) return;
+
+    const scale = zoomPercent / 100 * 1.5; // 基準スケール1.5 × ズーム倍率
+    const viewport = currentPdfPage.getViewport({ scale: scale });
+    const canvas = document.getElementById('pdfPreviewCanvas');
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    currentPdfPage.render({
+        canvasContext: context,
+        viewport: viewport
+    });
+}
 
 // PDFファイルからテキストを抽出して日程を解析
 async function readSchedulePdfFile(file) {
@@ -462,11 +480,13 @@ async function readSchedulePdfFile(file) {
         });
         const pdf = await loadingTask.promise;
 
-        // 全ページからテキストを抽出
+        // 全ページからテキストを抽出（座標情報も含む）
         let allText = '';
+        let allTextItems = [];
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
+            allTextItems.push(...textContent.items);
             const pageText = textContent.items.map(item => item.str).join(' ');
             allText += pageText + '\n';
         }
@@ -478,6 +498,9 @@ async function readSchedulePdfFile(file) {
 
         // 抽出したテキストから日付と時間をペアリング
         const schedules = extractSchedulesFromPdfText(allText);
+
+        // 座標情報を使って、予定がある時間帯を検出
+        const schedulesWithInfo = manualMode ? detectSchedulesWithAdditionalInfo(allTextItems, schedules) : schedules;
 
         // デバッグ用：抽出された日程を出力
         console.log('=== 抽出された日程 ===');
@@ -494,22 +517,26 @@ async function readSchedulePdfFile(file) {
             // 色つきセル抽出モード：プレビューと選択UIを表示
             // 最初のページをプレビュー表示
             const page = await pdf.getPage(1);
-            const viewport = page.getViewport({ scale: 1.5 });
-            const canvas = document.getElementById('pdfPreviewCanvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+            currentPdfPage = page; // グローバル変数に保存
 
-            await page.render({
-                canvasContext: context,
-                viewport: viewport
-            }).promise;
+            // 初期ズーム70%で表示
+            renderPdfWithZoom(70);
+
+            // ズームスライダーのイベントリスナー
+            const zoomSlider = document.getElementById('pdfZoomSlider');
+            const zoomValue = document.getElementById('pdfZoomValue');
+
+            zoomSlider.oninput = function() {
+                const zoom = parseInt(this.value);
+                zoomValue.textContent = zoom + '%';
+                renderPdfWithZoom(zoom);
+            };
 
             // グローバル変数に保存
-            pdfExtractedSchedules = schedules;
+            pdfExtractedSchedules = schedulesWithInfo;
 
             // 選択UIを表示
-            displayPdfScheduleSelection(schedules);
+            displayPdfScheduleSelection(schedulesWithInfo);
 
             document.getElementById('pdfUploadResult').textContent =
                 `${schedules.length}件の日程を抽出しました。必要な日程を選択してください。`;
@@ -544,15 +571,19 @@ function displayPdfScheduleSelection(schedules) {
 
     // 日付ごとにグループ化
     const groupedByDate = {};
-    schedules.forEach((schedule, index) => {
+    schedules.forEach((item, index) => {
+        // scheduleがオブジェクトの場合と文字列の場合に対応
+        const scheduleStr = typeof item === 'string' ? item : item.schedule;
+        const hasInfo = typeof item === 'object' ? item.hasInfo : false;
+
         // 日付部分を抽出（例: "2026/06/30 10:00" → "2026/06/30"）
-        const dateMatch = schedule.match(/(\d{4}\/\d{1,2}\/\d{1,2}|\d{1,2}月\d{1,2}日)/);
+        const dateMatch = scheduleStr.match(/(\d{4}\/\d{1,2}\/\d{1,2}|\d{1,2}月\d{1,2}日)/);
         const dateKey = dateMatch ? dateMatch[0] : 'その他';
 
         if (!groupedByDate[dateKey]) {
             groupedByDate[dateKey] = [];
         }
-        groupedByDate[dateKey].push({ schedule, index });
+        groupedByDate[dateKey].push({ schedule: scheduleStr, index, hasInfo });
     });
 
     // 日付順にソート
@@ -602,13 +633,18 @@ function displayPdfScheduleSelection(schedules) {
         });
 
         // 各日程のチェックボックス
-        sortedSchedules.forEach(({ schedule, index }) => {
+        sortedSchedules.forEach(({ schedule, index, hasInfo }) => {
             const itemDiv = document.createElement('div');
             itemDiv.style.padding = '8px 12px 8px 24px';
             itemDiv.style.borderBottom = '1px solid #e5e5df';
             itemDiv.style.display = 'flex';
             itemDiv.style.alignItems = 'center';
             itemDiv.style.gap = '10px';
+
+            // 追加情報がある場合は背景色をつける
+            if (hasInfo) {
+                itemDiv.style.background = '#e8f5e8'; // 薄い緑
+            }
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -707,6 +743,51 @@ function addSelectedSchedulesToInput() {
     document.getElementById('pdfUploadResult').textContent =
         `${selectedSchedules.length}件の日程をテキスト欄に追加しました`;
     document.getElementById('pdfUploadResult').style.color = '#5a6550';
+}
+
+// 座標情報を使って、追加情報がある時間帯を検出
+function detectSchedulesWithAdditionalInfo(textItems, schedules) {
+    const schedulesWithFlags = schedules.map(schedule => {
+        // 時間部分を抽出（例: "10:00" または "10:00〜10:20"）
+        const timeMatch = schedule.match(/(\d{1,2}:\d{2})/g);
+        if (!timeMatch) return { schedule, hasInfo: false };
+
+        const timeStr = timeMatch[0]; // 開始時間
+
+        // この時間が含まれるテキストアイテムを探す
+        const timeItems = textItems.filter(item => {
+            return item.str.includes(timeStr);
+        });
+
+        if (timeItems.length === 0) return { schedule, hasInfo: false };
+
+        // 時間と同じY座標（±5の範囲）にある他のテキストを探す
+        let hasAdditionalInfo = false;
+        timeItems.forEach(timeItem => {
+            const timeY = timeItem.transform[5]; // Y座標
+            const timeX = timeItem.transform[4]; // X座標
+
+            // 同じ行（Y座標が近い）で、時間の右側にあるテキストを探す
+            const sameRowItems = textItems.filter(item => {
+                const itemY = item.transform[5];
+                const itemX = item.transform[4];
+                const isNearY = Math.abs(itemY - timeY) < 5; // Y座標が近い
+                const isRightSide = itemX > timeX + 30; // 時間の右側
+                const isNotTime = !/^\d{1,2}:\d{2}$/.test(item.str.trim()); // 時間形式でない
+                const hasContent = item.str.trim().length > 0; // 空でない
+                return isNearY && isRightSide && isNotTime && hasContent;
+            });
+
+            if (sameRowItems.length > 0) {
+                hasAdditionalInfo = true;
+                console.log(`📌 ${schedule} に追加情報あり:`, sameRowItems.map(i => i.str).join(' '));
+            }
+        });
+
+        return { schedule, hasInfo: hasAdditionalInfo };
+    });
+
+    return schedulesWithFlags;
 }
 
 // PDFから抽出したテキストを解析して日程リストを作成

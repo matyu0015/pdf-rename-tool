@@ -2,6 +2,9 @@
 test_pdfs/
 create_test_pdfs.py
 create_test_excel.py
+test_schedule.xlsx
+test_student_data.xlsx
+test_student_photos/
 
 # macOS
 .DS_Store
