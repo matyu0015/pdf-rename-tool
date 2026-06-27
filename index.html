@@ -17,6 +17,7 @@
             <button class="tab-btn active" onclick="switchMainTab('pdf-rename')">📄 PDF名前変更</button>
             <button class="tab-btn" onclick="switchMainTab('schedule')">🐼 日程整理</button>
             <button class="tab-btn" onclick="switchMainTab('coming-soon')">✨ セルの中身をらくらく修正</button>
+            <button class="tab-btn" onclick="switchMainTab('one-submission')">🚢 ONE提出物用</button>
         </div>
 
         <!-- タブ1: PDF名前変更 -->
@@ -217,6 +218,59 @@
             </div>
         </div>
 
+        <!-- タブ4: ONE提出物用 -->
+        <div id="tab-one-submission" class="tab-content">
+            <div class="card">
+                <h2>⚓ 1. エクセルファイルをアップロード</h2>
+                <div class="upload-box">
+                    <input type="file" id="oneExcelFile" accept=".xlsx,.xls">
+                    <div id="oneExcelInfo" class="status" style="display:none;"></div>
+                </div>
+                <p class="note">
+                    <strong>🧭 対応条件：</strong><br>
+                    • 2シート構成のファイル<br>
+                    • 2シート目のA列に学生IDが記載されている<br>
+                    • 写真はB列に埋め込まれます
+                </p>
+            </div>
+
+            <div class="card">
+                <h2>🛳️ 2. 写真フォルダを選択</h2>
+                <div class="upload-box">
+                    <input type="file" id="oneImageFolder" webkitdirectory directory multiple>
+                    <div id="oneImageInfo" class="status" style="display:none;"></div>
+                </div>
+                <p class="note">
+                    <strong>🧭 対応条件：</strong><br>
+                    • ファイル名が学生ID（例：12345.jpg）<br>
+                    • 対応形式：JPG, JPEG, PNG
+                </p>
+            </div>
+
+            <div class="card">
+                <h2>⛵ 3. 埋め込み設定</h2>
+                <div class="field">
+                    <label>📍 埋め込み開始行（1から始まる行番号）:</label>
+                    <input type="number" id="oneStartRow" min="2" value="2" placeholder="例: 2" style="width: 100px;">
+                </div>
+                <p class="note" style="margin-top: 10px;">
+                    <strong>⚠️ 注意：</strong><br>
+                    • 1行目は項目名（ヘッダー）として扱われます<br>
+                    • 通常は2行目から開始してください
+                </p>
+            </div>
+
+            <div class="card">
+                <button class="btn-primary" id="oneProcessBtn" disabled onclick="processOneSubmission()">🚀 写真を埋め込んで保存</button>
+                <div id="oneProgress" style="display:none; margin-top: 20px;">
+                    <div style="width: 100%; height: 30px; background: #e9ecef; border-radius: 15px; overflow: hidden;">
+                        <div id="oneProgressFill" style="height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); width: 0%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600; transition: width 0.3s;">0%</div>
+                    </div>
+                </div>
+                <div id="oneStatus" style="display:none; margin-top: 20px;" class="status"></div>
+            </div>
+        </div>
+
         <!-- タブ3: セルの中身をらくらく修正 -->
         <div id="tab-coming-soon" class="tab-content">
             <div class="card">
@@ -284,6 +338,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

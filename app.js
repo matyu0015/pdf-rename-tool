@@ -1259,6 +1259,11 @@ let currentCellIndex = 0;
 let selectedSheetName = '';
 let editMode = 'placeholder'; // 'placeholder' または 'full'
 
+// グローバル変数（ONE提出物用機能）
+let oneExcelWorkbook = null;
+let oneExcelFileName = '';
+let oneImageFiles = {};
+
 // エクセル/CSVファイルのアップロード処理
 document.getElementById('replaceExcelFile')?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -1731,4 +1736,188 @@ function downloadReplacedExcel() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+// ===== ONE提出物用機能 =====
+
+// イベントリスナーの設定（DOMContentLoaded内で実行）
+document.addEventListener('DOMContentLoaded', () => {
+    const oneExcelFileInput = document.getElementById('oneExcelFile');
+    const oneImageFolderInput = document.getElementById('oneImageFolder');
+
+    if (oneExcelFileInput) {
+        oneExcelFileInput.addEventListener('change', handleOneExcelFile);
+    }
+    if (oneImageFolderInput) {
+        oneImageFolderInput.addEventListener('change', handleOneImageFolder);
+    }
+});
+
+async function handleOneExcelFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    oneExcelFileName = file.name;
+    const arrayBuffer = await file.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+    const workbook = new ExcelJS.Workbook();
+
+    try {
+        await workbook.xlsx.load(data);
+        oneExcelWorkbook = workbook;
+
+        const sheetCount = workbook.worksheets.length;
+        let studentIds = [];
+
+        if (sheetCount >= 2) {
+            const sheet2 = workbook.worksheets[1];
+            const startRow = parseInt(document.getElementById('oneStartRow').value);
+            sheet2.eachRow((row, rowNumber) => {
+                if (rowNumber >= startRow) {
+                    const studentId = row.getCell(1).value;
+                    if (studentId) studentIds.push(studentId);
+                }
+            });
+        }
+
+        const infoDiv = document.getElementById('oneExcelInfo');
+        infoDiv.style.display = 'block';
+        infoDiv.innerHTML = `
+            <div><strong>ファイル名:</strong> ${file.name}</div>
+            <div><strong>シート数:</strong> ${sheetCount}</div>
+            <div><strong>2シート目の学生ID数:</strong> ${studentIds.length}</div>
+        `;
+        infoDiv.className = 'status success';
+
+        checkOneReadyToProcess();
+    } catch (error) {
+        const infoDiv = document.getElementById('oneExcelInfo');
+        infoDiv.style.display = 'block';
+        infoDiv.textContent = 'エラー: ' + error.message;
+        infoDiv.className = 'status error';
+    }
+}
+
+function handleOneImageFolder(e) {
+    const files = Array.from(e.target.files);
+    oneImageFiles = {};
+
+    files.forEach(file => {
+        const ext = file.name.toLowerCase().split('.').pop();
+        if (['jpg', 'jpeg', 'png'].includes(ext)) {
+            const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
+            const studentId = nameWithoutExt.substring(0, 10);
+            oneImageFiles[studentId] = file;
+        }
+    });
+
+    const imageCount = Object.keys(oneImageFiles).length;
+    const infoDiv = document.getElementById('oneImageInfo');
+    infoDiv.style.display = 'block';
+    infoDiv.innerHTML = `
+        <div><strong>読み込まれた写真:</strong> ${imageCount}枚</div>
+        <div><strong>学生ID:</strong> ${Object.keys(oneImageFiles).slice(0, 5).join(', ')}${imageCount > 5 ? '...' : ''}</div>
+    `;
+    infoDiv.className = 'status success';
+
+    checkOneReadyToProcess();
+}
+
+function checkOneReadyToProcess() {
+    const hasExcel = oneExcelWorkbook !== null;
+    const hasImages = Object.keys(oneImageFiles).length > 0;
+    document.getElementById('oneProcessBtn').disabled = !(hasExcel && hasImages);
+}
+
+async function processOneSubmission() {
+    if (!oneExcelWorkbook || Object.keys(oneImageFiles).length === 0) {
+        alert('エクセルファイルと写真フォルダの両方を選択してください');
+        return;
+    }
+
+    const startRow = parseInt(document.getElementById('oneStartRow').value);
+    const sheet2 = oneExcelWorkbook.worksheets[1];
+
+    document.getElementById('oneProgress').style.display = 'block';
+    document.getElementById('oneStatus').style.display = 'block';
+    document.getElementById('oneProcessBtn').disabled = true;
+
+    let statusHTML = '<h3 style="font-size: 16px; margin-bottom: 10px;">処理状況</h3>';
+    let processedCount = 0;
+    let totalCount = 0;
+    let missingImages = [];
+
+    // カウント
+    sheet2.eachRow((row, rowNumber) => {
+        if (rowNumber >= startRow) {
+            const studentId = row.getCell(1).value;
+            if (studentId) totalCount++;
+        }
+    });
+
+    // 処理
+    for (let rowNumber = startRow; rowNumber <= sheet2.rowCount; rowNumber++) {
+        const row = sheet2.getRow(rowNumber);
+        const studentIdRaw = String(row.getCell(1).value || '').trim();
+
+        if (!studentIdRaw) continue;
+
+        const studentId = studentIdRaw.substring(0, 10);
+
+        if (oneImageFiles[studentId]) {
+            try {
+                const imageFile = oneImageFiles[studentId];
+                const arrayBuffer = await imageFile.arrayBuffer();
+
+                const ext = imageFile.name.toLowerCase().split('.').pop();
+                const imageId = oneExcelWorkbook.addImage({
+                    buffer: arrayBuffer,
+                    extension: ext === 'jpg' ? 'jpeg' : ext,
+                });
+
+                sheet2.addImage(imageId, {
+                    tl: { col: 1, row: rowNumber - 1, colOff: 0, rowOff: 0 },
+                    br: { col: 2, row: rowNumber, colOff: 0, rowOff: 0 },
+                    editAs: 'oneCell'
+                });
+
+                processedCount++;
+                statusHTML += `<div style="padding: 6px 0; color: #28a745; font-size: 14px;">✓ ${studentId}: 写真を埋め込みました</div>`;
+            } catch (error) {
+                statusHTML += `<div style="padding: 6px 0; color: #dc3545; font-size: 14px;">✗ ${studentId}: エラー - ${error.message}</div>`;
+            }
+        } else {
+            missingImages.push(studentId);
+            statusHTML += `<div style="padding: 6px 0; color: #ffc107; font-size: 14px;">⚠ ${studentId}: 写真が見つかりません</div>`;
+        }
+
+        const progress = Math.round((processedCount + missingImages.length) / totalCount * 100);
+        document.getElementById('oneProgressFill').style.width = progress + '%';
+        document.getElementById('oneProgressFill').textContent = progress + '%';
+        document.getElementById('oneStatus').innerHTML = statusHTML;
+    }
+
+    // サマリーを追加
+    statusHTML += `
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #667eea; font-size: 14px;">
+            <strong>処理完了:</strong> ${processedCount}/${totalCount}枚の写真を埋め込みました
+        </div>
+    `;
+    if (missingImages.length > 0) {
+        statusHTML += `<div style="color: #ffc107; font-size: 14px; margin-top: 5px;"><strong>写真なし:</strong> ${missingImages.length}件</div>`;
+    }
+
+    document.getElementById('oneStatus').innerHTML = statusHTML;
+
+    // ファイルをダウンロード
+    const buffer = await oneExcelWorkbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = oneExcelFileName.replace(/\.xlsx?$/i, '_写真埋め込み.xlsx');
+    a.click();
+    URL.revokeObjectURL(url);
+
+    document.getElementById('oneProcessBtn').disabled = false;
 }
