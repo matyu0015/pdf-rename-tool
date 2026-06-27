@@ -6,7 +6,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #f5f5f0;
     min-height: 100vh;
     padding: 20px;
     color: #333;
@@ -15,24 +15,25 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    background: white;
-    border-radius: 20px;
+    background: #ffffff;
+    border-radius: 8px;
     padding: 40px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 h1 {
     text-align: center;
-    color: #667eea;
+    color: #5a6650;
     margin-bottom: 10px;
-    font-size: 2.5em;
+    font-size: 2em;
+    font-weight: 600;
 }
 
 .subtitle {
     text-align: center;
-    color: #666;
+    color: #8a8a80;
     margin-bottom: 40px;
-    font-size: 0.95em;
+    font-size: 0.9em;
 }
 
 .upload-section {
@@ -43,26 +44,27 @@ h1 {
 }
 
 .upload-box {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 25px;
-    border: 2px dashed #ddd;
-    transition: all 0.3s ease;
+    background: #fafaf8;
+    border-radius: 6px;
+    padding: 24px;
+    border: 1px solid #e5e5df;
+    transition: all 0.2s ease;
 }
 
 .upload-box:hover {
-    border-color: #667eea;
-    background: #f0f2ff;
+    border-color: #b8b8aa;
+    background: #f8f8f5;
 }
 
 .upload-box h2 {
-    color: #667eea;
+    color: #5a6650;
     margin-bottom: 10px;
-    font-size: 1.3em;
+    font-size: 1.2em;
+    font-weight: 600;
 }
 
 .description {
-    color: #666;
+    color: #6b6b60;
     font-size: 0.9em;
     margin-bottom: 15px;
     line-height: 1.5;
@@ -71,38 +73,38 @@ h1 {
 input[type="file"] {
     display: block;
     width: 100%;
-    padding: 12px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #d0d0c8;
+    border-radius: 4px;
     background: white;
     cursor: pointer;
-    font-size: 0.95em;
-    transition: all 0.3s ease;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
 }
 
 input[type="file"]:hover {
-    border-color: #667eea;
+    border-color: #a0a090;
 }
 
 .status {
     margin-top: 15px;
     padding: 10px;
-    border-radius: 6px;
-    font-size: 0.9em;
+    border-radius: 4px;
+    font-size: 0.85em;
     display: none;
 }
 
 .status.success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background: #e8f5e8;
+    color: #3d5a3d;
+    border: 1px solid #c8e0c8;
     display: block;
 }
 
 .status.error {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background: #f5e8e8;
+    color: #5a3d3d;
+    border: 1px solid #e0c8c8;
     display: block;
 }
 
@@ -111,7 +113,7 @@ input[type="file"]:hover {
     max-height: 200px;
     overflow-y: auto;
     background: white;
-    border-radius: 6px;
+    border-radius: 4px;
     padding: 10px;
     display: none;
 }
@@ -122,23 +124,23 @@ input[type="file"]:hover {
 
 .name-item {
     padding: 8px;
-    background: #e8ecff;
+    background: #f0f0eb;
     margin-bottom: 6px;
-    border-radius: 4px;
-    font-size: 0.9em;
-    color: #333;
+    border-radius: 3px;
+    font-size: 0.85em;
+    color: #4a4a40;
 }
 
 .pdf-list {
     display: grid;
-    gap: 25px;
+    gap: 20px;
 }
 
 .pdf-item {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: #fafaf8;
+    border-radius: 6px;
+    padding: 24px;
+    border: 1px solid #e5e5df;
 }
 
 .pdf-header {
@@ -151,9 +153,9 @@ input[type="file"]:hover {
 }
 
 .pdf-original-name {
-    font-weight: bold;
-    color: #333;
-    font-size: 1.1em;
+    font-weight: 600;
+    color: #4a4a40;
+    font-size: 1em;
 }
 
 .pdf-controls {
@@ -164,73 +166,70 @@ input[type="file"]:hover {
 }
 
 .pdf-controls label {
-    font-weight: 600;
-    color: #667eea;
+    font-weight: 500;
+    color: #5a6650;
 }
 
 .pdf-controls select {
     padding: 8px 12px;
-    border: 2px solid #ddd;
-    border-radius: 6px;
-    font-size: 0.95em;
+    border: 1px solid #d0d0c8;
+    border-radius: 4px;
+    font-size: 0.9em;
     min-width: 200px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    background: white;
 }
 
 .pdf-controls select:hover {
-    border-color: #667eea;
+    border-color: #a0a090;
 }
 
 .pdf-controls select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #7a8070;
 }
 
 .btn {
-    padding: 10px 20px;
+    padding: 9px 18px;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.95em;
-    transition: all 0.3s ease;
-    font-weight: 600;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+    font-weight: 500;
 }
 
 .btn-download {
-    background: #667eea;
+    background: #6a7560;
     color: white;
 }
 
 .btn-download:hover {
-    background: #5568d3;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    background: #5a6550;
 }
 
 .btn-download:disabled {
-    background: #ccc;
+    background: #c8c8c0;
     cursor: not-allowed;
-    transform: none;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #6a7560;
     color: white;
-    padding: 15px 40px;
-    font-size: 1.1em;
+    padding: 12px 32px;
+    font-size: 1em;
+    width: 100%;
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: #5a6550;
 }
 
 .pdf-preview {
     margin-top: 20px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid #e0e0d8;
+    border-radius: 4px;
     overflow: hidden;
     background: white;
 }
@@ -244,42 +243,43 @@ input[type="file"]:hover {
     margin-top: 40px;
     text-align: center;
     padding: 30px;
-    background: #f8f9fa;
-    border-radius: 12px;
+    background: #fafaf8;
+    border-radius: 6px;
+    border: 1px solid #e5e5df;
 }
 
 /* タブナビゲーション */
 .tab-navigation {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     margin-bottom: 30px;
-    border-bottom: 3px solid #e5e7eb;
+    border-bottom: 1px solid #e0e0d8;
     padding-bottom: 0;
 }
 
 .tab-btn {
-    padding: 12px 24px;
-    font-size: 1em;
-    font-weight: 600;
-    color: #888;
+    padding: 10px 20px;
+    font-size: 0.95em;
+    font-weight: 500;
+    color: #8a8a80;
     background: none;
     border: none;
     cursor: pointer;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -3px;
-    transition: all 0.3s ease;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s ease;
     font-family: inherit;
 }
 
 .tab-btn:hover {
-    color: #667eea;
-    background: rgba(102, 126, 234, 0.05);
+    color: #5a6650;
+    background: #fafaf8;
 }
 
 .tab-btn.active {
-    color: #667eea;
-    border-bottom-color: #667eea;
-    background: rgba(102, 126, 234, 0.05);
+    color: #5a6650;
+    border-bottom-color: #6a7560;
+    background: #fafaf8;
 }
 
 .tab-content {
@@ -290,84 +290,80 @@ input[type="file"]:hover {
     display: block;
 }
 
-/* 準備中メッセージ */
-.coming-soon-message {
-    text-align: center;
-    padding: 80px 20px;
-}
-
-.coming-soon-icon {
-    font-size: 5em;
-    margin-bottom: 20px;
-}
-
-.coming-soon-message h2 {
-    color: #667eea;
-    font-size: 2em;
-    margin-bottom: 10px;
-}
-
-.coming-soon-message p {
-    color: #666;
-    font-size: 1.1em;
-}
-
 /* 日程整理機能のスタイル */
 .card {
-    background: white;
-    border-radius: 12px;
+    background: #fafaf8;
+    border-radius: 6px;
     padding: 20px 24px;
     margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e5df;
 }
 
 .card h2 {
-    font-size: 1.2em;
+    font-size: 1.1em;
     font-weight: 600;
-    color: #667eea;
+    color: #5a6650;
     margin-bottom: 14px;
-    border-left: 3px solid #667eea;
+    border-left: 3px solid #6a7560;
     padding-left: 10px;
 }
 
 label {
     display: block;
-    font-size: 0.9em;
+    font-size: 0.85em;
     font-weight: 500;
-    color: #555;
+    color: #5a5a50;
     margin-bottom: 6px;
 }
 
 textarea {
     width: 100%;
-    border: 2px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid #d0d0c8;
+    border-radius: 4px;
     padding: 10px 12px;
-    font-size: 0.95em;
+    font-size: 0.9em;
     font-family: inherit;
     resize: vertical;
     outline: none;
     transition: border-color 0.2s;
+    background: white;
 }
 
 textarea:focus {
-    border-color: #667eea;
+    border-color: #7a8070;
 }
 
 input[type="number"],
-input[type="time"] {
-    border: 2px solid #ddd;
-    border-radius: 6px;
+input[type="time"],
+input[type="text"] {
+    border: 1px solid #d0d0c8;
+    border-radius: 4px;
     padding: 8px 10px;
-    font-size: 0.95em;
+    font-size: 0.9em;
     outline: none;
     width: 80px;
     transition: border-color 0.2s;
+    background: white;
 }
 
 input[type="number"]:focus,
-input[type="time"]:focus {
-    border-color: #667eea;
+input[type="time"]:focus,
+input[type="text"]:focus {
+    border-color: #7a8070;
+}
+
+select {
+    border: 1px solid #d0d0c8;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 0.9em;
+    outline: none;
+    transition: border-color 0.2s;
+    background: white;
+}
+
+select:focus {
+    border-color: #7a8070;
 }
 
 .row {
@@ -396,9 +392,9 @@ input[type="time"]:focus {
 }
 
 .toggle-label {
-    font-size: 0.95em;
+    font-size: 0.9em;
     font-weight: 500;
-    color: #555;
+    color: #5a5a50;
 }
 
 .toggle {
@@ -421,7 +417,7 @@ input[type="time"]:focus {
     left: 0;
     right: 0;
     bottom: 0;
-    background: #ccc;
+    background: #d0d0c8;
     border-radius: 22px;
     transition: 0.2s;
 }
@@ -439,7 +435,7 @@ input[type="time"]:focus {
 }
 
 input:checked + .slider {
-    background: #667eea;
+    background: #6a7560;
 }
 
 input:checked + .slider:before {
@@ -449,9 +445,10 @@ input:checked + .slider:before {
 .section-sub {
     display: none;
     padding: 14px;
-    background: #f8f9fa;
-    border-radius: 8px;
+    background: #f5f5f0;
+    border-radius: 4px;
     margin-top: 4px;
+    border: 1px solid #e5e5df;
 }
 
 .section-sub.active {
@@ -466,98 +463,97 @@ input:checked + .slider:before {
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.95em;
+    font-size: 0.9em;
 }
 
 th {
-    background: #f0f2ff;
-    color: #667eea;
+    background: #f0f0eb;
+    color: #5a6650;
     font-weight: 600;
     padding: 10px 12px;
     text-align: left;
-    border-bottom: 2px solid #bfdbfe;
+    border-bottom: 1px solid #d8d8d0;
 }
 
 td {
     padding: 8px 12px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0eb;
 }
 
 tr:hover td {
-    background: #f8faff;
+    background: #fafaf8;
 }
 
 .badge {
     display: inline-block;
     font-size: 0.75em;
     padding: 2px 7px;
-    border-radius: 9999px;
-    background: #dbeafe;
-    color: #1d4ed8;
-    font-weight: 600;
+    border-radius: 3px;
+    background: #e8e8e0;
+    color: #5a5a50;
+    font-weight: 500;
 }
 
 .badge-red {
-    background: #fee2e2;
-    color: #b91c1c;
+    background: #f5e8e8;
+    color: #8a6060;
 }
 
 .btn-dl {
-    background: #059669;
+    background: #6a7560;
     color: white;
     border: none;
-    border-radius: 8px;
-    padding: 12px 24px;
-    font-size: 0.95em;
-    font-weight: 600;
+    border-radius: 4px;
+    padding: 11px 24px;
+    font-size: 0.9em;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     margin-top: 14px;
 }
 
 .btn-dl:hover {
-    background: #047857;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+    background: #5a6550;
 }
 
 .alert {
-    background: #fef3c7;
-    border: 1px solid #fcd34d;
-    border-radius: 8px;
+    background: #f8f5e8;
+    border: 1px solid #e8e0c8;
+    border-radius: 4px;
     padding: 10px 14px;
-    font-size: 0.9em;
-    color: #92400e;
+    font-size: 0.85em;
+    color: #6a6050;
     margin-top: 8px;
 }
 
 .note {
-    font-size: 0.85em;
-    color: #9ca3af;
+    font-size: 0.8em;
+    color: #9a9a90;
     margin-top: 6px;
+    line-height: 1.4;
 }
 
 .unit {
-    font-size: 0.95em;
-    color: #555;
+    font-size: 0.9em;
+    color: #6a6a60;
 }
 
 /* Excelアップロード */
 .upload-area {
-    border: 2px dashed #bfdbfe;
-    border-radius: 8px;
+    border: 1px dashed #c8c8c0;
+    border-radius: 4px;
     padding: 18px 16px;
     text-align: center;
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s;
     margin-bottom: 10px;
-    background: #f8faff;
+    background: #fafaf8;
 }
 
 .upload-area:hover,
 .upload-area.dragover {
-    background: #eff6ff;
-    border-color: #667eea;
+    background: #f5f5f0;
+    border-color: #a0a090;
 }
 
 .upload-area input[type="file"] {
@@ -565,22 +561,22 @@ tr:hover td {
 }
 
 .upload-icon {
-    font-size: 1.8em;
+    font-size: 1.5em;
     margin-bottom: 6px;
 }
 
 .upload-text {
-    font-size: 0.9em;
-    color: #555;
+    font-size: 0.85em;
+    color: #6a6a60;
 }
 
 .upload-text strong {
-    color: #667eea;
+    color: #5a6650;
 }
 
 .upload-result {
-    font-size: 0.85em;
-    color: #059669;
+    font-size: 0.8em;
+    color: #5a6550;
     margin-top: 6px;
     font-weight: 500;
     min-height: 18px;
@@ -590,25 +586,25 @@ tr:hover td {
     display: flex;
     gap: 0;
     margin-bottom: 12px;
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 1px solid #e0e0d8;
 }
 
 .tab-btn-sub {
-    padding: 7px 18px;
-    font-size: 0.9em;
-    font-weight: 600;
-    color: #888;
+    padding: 7px 16px;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #8a8a80;
     background: none;
     border: none;
     cursor: pointer;
     border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
+    margin-bottom: -1px;
     transition: color 0.15s, border-color 0.15s;
 }
 
 .tab-btn-sub.active {
-    color: #667eea;
-    border-bottom-color: #667eea;
+    color: #5a6650;
+    border-bottom-color: #6a7560;
 }
 
 .tab-panel {
@@ -634,8 +630,8 @@ tr:hover td {
     gap: 14px;
     flex-wrap: wrap;
     margin-bottom: 12px;
-    font-size: 0.85em;
-    color: #555;
+    font-size: 0.8em;
+    color: #6a6a60;
     align-items: center;
 }
 
@@ -646,54 +642,54 @@ tr:hover td {
 }
 
 .cal-legend-dot {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     display: inline-block;
 }
 
 .legend-selected {
-    background: #667eea;
+    background: #6a7560;
 }
 
 .legend-holiday {
-    background: #fee2e2;
-    border: 1px solid #fca5a5;
+    background: #f0d8d8;
+    border: 1px solid #d8c0c0;
 }
 
 .legend-sat {
-    color: #1d4ed8;
-    font-weight: 700;
-    font-size: 0.95em;
+    color: #5a7090;
+    font-weight: 600;
+    font-size: 0.9em;
 }
 
 .legend-sun {
-    color: #b91c1c;
-    font-weight: 700;
-    font-size: 0.95em;
+    color: #8a6060;
+    font-weight: 600;
+    font-size: 0.9em;
 }
 
 .cal-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 18px;
+    gap: 16px;
 }
 
 .cal-month {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border: 1px solid #e0e0d8;
+    border-radius: 4px;
     overflow: hidden;
     min-width: 196px;
 }
 
 .cal-month-title {
-    background: #f0f2ff;
-    color: #667eea;
-    font-size: 0.95em;
-    font-weight: 700;
+    background: #f0f0eb;
+    color: #5a6650;
+    font-size: 0.9em;
+    font-weight: 600;
     text-align: center;
     padding: 6px 0;
-    border-bottom: 1px solid #bfdbfe;
+    border-bottom: 1px solid #d8d8d0;
 }
 
 .cal-table {
@@ -702,28 +698,28 @@ tr:hover td {
 }
 
 .cal-table th {
-    font-size: 0.75em;
-    font-weight: 600;
+    font-size: 0.7em;
+    font-weight: 500;
     padding: 4px 0;
     text-align: center;
     background: none;
     border: none;
-    color: #555;
+    color: #6a6a60;
 }
 
 .cal-table th.sun {
-    color: #b91c1c;
+    color: #8a6060;
 }
 
 .cal-table th.sat {
-    color: #1d4ed8;
+    color: #5a7090;
 }
 
 .cal-table td {
     width: 28px;
     height: 26px;
     text-align: center;
-    font-size: 0.85em;
+    font-size: 0.8em;
     padding: 0;
     border: none;
     position: relative;
@@ -739,31 +735,31 @@ tr:hover td {
     justify-content: center;
     width: 24px;
     height: 24px;
-    border-radius: 50%;
+    border-radius: 3px;
     position: relative;
 }
 
 .cal-day.sun {
-    color: #b91c1c;
+    color: #8a6060;
 }
 
 .cal-day.sat {
-    color: #1d4ed8;
+    color: #5a7090;
 }
 
 .cal-day.holiday {
-    color: #b91c1c;
+    color: #8a6060;
 }
 
 .cal-day.selected {
-    background: #667eea;
+    background: #6a7560;
     color: white !important;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .cal-day.holiday-bg:not(.selected) {
-    background: #fee2e2;
-    color: #b91c1c;
+    background: #f0d8d8;
+    color: #8a6060;
 }
 
 .holiday-dot {
@@ -771,10 +767,10 @@ tr:hover td {
     bottom: 1px;
     left: 50%;
     transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
+    width: 3px;
+    height: 3px;
     border-radius: 50%;
-    background: #ef4444;
+    background: #c08080;
 }
 
 .cal-day.selected .holiday-dot {
@@ -791,7 +787,7 @@ tr:hover td {
     }
 
     h1 {
-        font-size: 1.8em;
+        font-size: 1.6em;
     }
 
     .pdf-header {
@@ -813,8 +809,8 @@ tr:hover td {
 
     .tab-btn {
         flex: 1;
-        min-width: 120px;
-        font-size: 0.9em;
-        padding: 10px 16px;
+        min-width: 110px;
+        font-size: 0.85em;
+        padding: 9px 14px;
     }
 }
