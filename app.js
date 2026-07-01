@@ -1177,20 +1177,39 @@ function splitSegments(text) {
 function parseSegment(seg, defaultYear) {
     if (!seg) return [];
 
-    const timeMatch = seg.match(/(\d{1,2}):(\d{2})\s*[〜~\-–]\s*(\d{1,2}):(\d{2})/);
-    let timeRange = '';
-    if (timeMatch) {
-        const sh = timeMatch[1].padStart(2, '0');
-        const sm = timeMatch[2].padStart(2, '0');
-        const eh = timeMatch[3].padStart(2, '0');
-        const em = timeMatch[4].padStart(2, '0');
-        timeRange = `${sh}:${sm}〜${eh}:${em}`;
-    }
-
     const date = extractDate(seg, defaultYear);
     if (!date) return [];
 
-    return [{ date, dateKey: formatDateKey(date), timeRange }];
+    // 時間範囲パターン（例: 12:00〜13:00）
+    const timeRangeMatch = seg.match(/(\d{1,2}):(\d{2})\s*[〜~\-–]\s*(\d{1,2}):(\d{2})/);
+    if (timeRangeMatch) {
+        const sh = timeRangeMatch[1].padStart(2, '0');
+        const sm = timeRangeMatch[2].padStart(2, '0');
+        const eh = timeRangeMatch[3].padStart(2, '0');
+        const em = timeRangeMatch[4].padStart(2, '0');
+        const timeRange = `${sh}:${sm}〜${eh}:${em}`;
+        return [{ date, dateKey: formatDateKey(date), timeRange }];
+    }
+
+    // 単一の時間パターン（例: 12:00 または 12時）
+    const singleTimeMatch = seg.match(/(\d{1,2}):(\d{2})|(\d{1,2})時/);
+    if (singleTimeMatch) {
+        let timeRange;
+        if (singleTimeMatch[1]) {
+            // HH:MM形式
+            const h = singleTimeMatch[1].padStart(2, '0');
+            const m = singleTimeMatch[2].padStart(2, '0');
+            timeRange = `${h}:${m}`;
+        } else if (singleTimeMatch[3]) {
+            // HH時形式
+            const h = singleTimeMatch[3].padStart(2, '0');
+            timeRange = `${h}:00`;
+        }
+        return [{ date, dateKey: formatDateKey(date), timeRange }];
+    }
+
+    // 時間なし
+    return [{ date, dateKey: formatDateKey(date), timeRange: '' }];
 }
 
 function extractDate(seg, defaultYear) {
