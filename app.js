@@ -722,7 +722,9 @@ function addSelectedSchedulesToInput() {
     pdfExtractedSchedules.forEach((schedule, index) => {
         const checkbox = document.getElementById(`pdf-schedule-${index}`);
         if (checkbox && checkbox.checked) {
-            selectedSchedules.push(schedule);
+            // scheduleがオブジェクトの場合は.scheduleプロパティを、文字列の場合はそのまま使用
+            const scheduleStr = typeof schedule === 'object' ? schedule.schedule : schedule;
+            selectedSchedules.push(scheduleStr);
         }
     });
 
