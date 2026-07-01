@@ -1382,6 +1382,7 @@ function processSchedule() {
     const slotEnd = document.getElementById('slotEnd').value;
     const duration = parseInt(document.getElementById('duration').value) || 60;
     const interval = parseInt(document.getElementById('interval').value) || 0;
+    const aolFormat = document.getElementById('aolFormat').checked;
 
     const parsed = parseText(text, defaultYear);
 
@@ -1492,43 +1493,78 @@ function downloadExcel() {
     if (!currentData || currentData.length === 0) return;
 
     const nBefore = parseInt(document.getElementById('businessDaysBefore').value) || 0;
-    // 現在のトグル状態を使用（リアルタイムで反映）
     const mergeStartTime = document.getElementById('mergeStartTimeWithDate').checked;
     const mergeDeadlineTime = document.getElementById('mergeDeadlineTimeWithDate').checked;
     const deadlineTime = document.getElementById('deadlineTime').value;
     const showSlot = currentData.some(r => r.timeSlot);
     const showDeadline = nBefore > 0;
+    const aolFormat = document.getElementById('aolFormat').checked;
 
-    const headers = ['実施日', '曜日', '備考'];
-    // 開始時間を日付と結合しない場合のみ、時間列を追加
-    if (showSlot && !mergeStartTime) headers.splice(2, 0, '時間');
-    if (showDeadline) headers.push(`締め切り日（${nBefore}営業日前）`, '締め切り曜日');
+    let headers, dataRows;
 
-    const dataRows = currentData.map(r => {
-        const warn = r.isHoliday ? '祝日' : r.isWeekend ? '休日' : '';
+    if (aolFormat) {
+        // AOLフォーマット
+        headers = ['表示区分', '会場名称', '年', '月', '日', '開始時刻', '終了時刻', '定員', '面接官人数', 'レーン数（レーン管理機能使用時）'];
 
-        // 時間範囲全体または開始時間を使用
-        const timeToDisplay = r.timeSlot || '';
+        dataRows = currentData.map(r => {
+            // 日付をDateオブジェクトから年・月・日に分割
+            const year = r.date.getFullYear();
+            const month = r.date.getMonth() + 1;
+            const day = r.date.getDate();
 
-        // 実施日の表示（時間を結合する場合）
-        const dateDisplay = mergeStartTime && timeToDisplay
-            ? `${r.dateStr} ${timeToDisplay}`
-            : r.dateStr;
+            // 時間範囲から開始・終了時刻を分割
+            let startTime = '';
+            let endTime = '';
+            if (r.timeSlot) {
+                const timeMatch = r.timeSlot.match(/(\d{1,2}:\d{2})\s*〜\s*(\d{1,2}:\d{2})/);
+                if (timeMatch) {
+                    startTime = timeMatch[1];
+                    endTime = timeMatch[2];
+                } else {
+                    // 時間範囲でない場合は開始時刻のみ
+                    startTime = r.timeSlot;
+                }
+            }
 
-        const row = [dateDisplay, r.dayOfWeek, warn];
-        // 開始時間を日付と結合しない場合のみ、時間列を追加
-        if (showSlot && !mergeStartTime) row.splice(2, 0, r.timeSlot);
+            return [
+                '',          // 表示区分（空）
+                '',          // 会場名称（空）
+                year,        // 年
+                month,       // 月
+                day,         // 日
+                startTime,   // 開始時刻
+                endTime,     // 終了時刻
+                '',          // 定員（空）
+                '',          // 面接官人数（空）
+                ''           // レーン数（空）
+            ];
+        });
+    } else {
+        // 通常フォーマット
+        headers = ['実施日', '曜日', '備考'];
+        if (showSlot && !mergeStartTime) headers.splice(2, 0, '時間');
+        if (showDeadline) headers.push(`締め切り日（${nBefore}営業日前）`, '締め切り曜日');
 
-        // 締切日の表示（締切時間を結合する場合）
-        if (showDeadline) {
-            const deadlineDisplay = mergeDeadlineTime && r.deadline
-                ? `${r.deadline} ${deadlineTime}`
-                : r.deadline;
-            row.push(deadlineDisplay);
-            row.push(r.deadlineDow);
-        }
-        return row;
-    });
+        dataRows = currentData.map(r => {
+            const warn = r.isHoliday ? '祝日' : r.isWeekend ? '休日' : '';
+            const timeToDisplay = r.timeSlot || '';
+            const dateDisplay = mergeStartTime && timeToDisplay
+                ? `${r.dateStr} ${timeToDisplay}`
+                : r.dateStr;
+
+            const row = [dateDisplay, r.dayOfWeek, warn];
+            if (showSlot && !mergeStartTime) row.splice(2, 0, r.timeSlot);
+
+            if (showDeadline) {
+                const deadlineDisplay = mergeDeadlineTime && r.deadline
+                    ? `${r.deadline} ${deadlineTime}`
+                    : r.deadline;
+                row.push(deadlineDisplay);
+                row.push(r.deadlineDow);
+            }
+            return row;
+        });
+    }
 
     const wsData = [headers, ...dataRows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
