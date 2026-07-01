@@ -206,6 +206,22 @@
                             <input type="time" id="deadlineTime" value="09:00" style="width:100px">
                         </div>
                     </div>
+
+                    <div class="toggle-row" style="margin-top:12px;">
+                        <label class="toggle">
+                            <input type="checkbox" id="outputEndTime">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">終了時刻も出力する（開始時刻 + 所要時間で自動計算）</span>
+                    </div>
+
+                    <div id="endTimeSection" class="section-sub" style="margin-top:8px;">
+                        <div class="field">
+                            <label>所要時間（分）</label>
+                            <input type="number" id="durationMinutes" value="60" min="1" max="1440" style="width:100px">
+                            <span class="unit">分</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- カレンダープレビュー -->

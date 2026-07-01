@@ -1077,6 +1077,25 @@ function isHoliday(date) {
     return HOLIDAYS.has(key);
 }
 
+// 開始時刻に所要時間（分）を加算して終了時刻を計算
+function calculateEndTime(startTime, durationMinutes) {
+    if (!startTime) return '';
+
+    // HH:MM形式の時刻をパース
+    const match = startTime.match(/(\d{1,2}):(\d{2})/);
+    if (!match) return '';
+
+    const startHour = parseInt(match[1]);
+    const startMinute = parseInt(match[2]);
+
+    // 分を加算
+    const totalMinutes = startHour * 60 + startMinute + durationMinutes;
+    const endHour = Math.floor(totalMinutes / 60) % 24;
+    const endMinute = totalMinutes % 60;
+
+    return `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+}
+
 function isBusinessDay(date) {
     const d = date.getDay();
     return d !== 0 && d !== 6 && !isHoliday(date);
@@ -1383,6 +1402,8 @@ function processSchedule() {
     const duration = parseInt(document.getElementById('duration').value) || 60;
     const interval = parseInt(document.getElementById('interval').value) || 0;
     const aolFormat = document.getElementById('aolFormat').checked;
+    const outputEndTime = document.getElementById('outputEndTime').checked;
+    const durationMinutes = parseInt(document.getElementById('durationMinutes').value) || 60;
 
     const parsed = parseText(text, defaultYear);
 
@@ -1411,6 +1432,9 @@ function processSchedule() {
             }
 
             for (const slot of slotsSource) {
+                // 終了時刻を計算（必要な場合）
+                const endTime = outputEndTime ? calculateEndTime(slot, durationMinutes) : '';
+
                 rows.push({
                     date: p.date,
                     dateStr: formatDate(p.date),
@@ -1418,11 +1442,21 @@ function processSchedule() {
                     isHoliday: isHoliday(p.date),
                     isWeekend: p.date.getDay() === 0 || p.date.getDay() === 6,
                     timeSlot: slot,
+                    endTime: endTime,
                     deadline: deadline ? formatDate(deadline) : '',
                     deadlineDow: deadline ? getDayOfWeek(deadline) : '',
                 });
             }
         } else {
+            // timeSlotから開始時刻を取得（時間範囲の場合は開始時刻のみ）
+            let startTime = p.timeRange || '';
+            if (startTime && startTime.includes('〜')) {
+                startTime = startTime.split('〜')[0].trim();
+            }
+
+            // 終了時刻を計算（必要な場合）
+            const endTime = outputEndTime ? calculateEndTime(startTime, durationMinutes) : '';
+
             rows.push({
                 date: p.date,
                 dateStr: formatDate(p.date),
@@ -1430,6 +1464,7 @@ function processSchedule() {
                 isHoliday: isHoliday(p.date),
                 isWeekend: p.date.getDay() === 0 || p.date.getDay() === 6,
                 timeSlot: p.timeRange || '',
+                endTime: endTime,
                 deadline: deadline ? formatDate(deadline) : '',
                 deadlineDow: deadline ? getDayOfWeek(deadline) : '',
             });
@@ -1450,11 +1485,14 @@ function processSchedule() {
 function renderTable(rows, nBefore, mergeStartTime = false, mergeDeadlineTime = false, deadlineTime = '09:00') {
     const showDeadline = nBefore > 0;
     const showSlot = rows.some(r => r.timeSlot);
+    const showEndTime = rows.some(r => r.endTime);
 
     const head = document.getElementById('resultHead');
     let cols = ['実施日', '曜日', '備考'];
     // 開始時間を日付と結合しない場合のみ、時間列を追加
-    if (showSlot && !mergeStartTime) cols.splice(2, 0, '時間');
+    if (showSlot && !mergeStartTime) cols.splice(2, 0, '開始時刻');
+    // 終了時刻列を追加
+    if (showEndTime) cols.splice(showSlot && !mergeStartTime ? 3 : 2, 0, '終了時刻');
     if (showDeadline) cols.push(`締め切り日（${nBefore}営業日前）`, '締め切り曜日');
     head.innerHTML = '<tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
 
@@ -1474,6 +1512,8 @@ function renderTable(rows, nBefore, mergeStartTime = false, mergeDeadlineTime = 
         let tds = `<td>${dateDisplay}</td><td>${r.dayOfWeek}</td>`;
         // 開始時間を日付と結合しない場合のみ、時間列を表示
         if (showSlot && !mergeStartTime) tds += `<td>${r.timeSlot}</td>`;
+        // 終了時刻を表示
+        if (showEndTime) tds += `<td>${r.endTime || ''}</td>`;
         tds += `<td>${warn}</td>`;
 
         // 締切日の表示（締切時間を結合する場合）
@@ -1502,6 +1542,8 @@ function downloadExcel() {
 
     let headers, dataRows;
 
+    const showEndTime = currentData.some(r => r.endTime);
+
     if (aolFormat) {
         // AOLフォーマット
         headers = ['表示区分', '会場名称', '年', '月', '日', '開始時刻', '終了時刻', '定員', '面接官人数', 'レーン数（レーン管理機能使用時）'];
@@ -1514,12 +1556,14 @@ function downloadExcel() {
 
             // 時間範囲から開始・終了時刻を分割
             let startTime = '';
-            let endTime = '';
+            let endTime = r.endTime || ''; // 計算された終了時刻を優先
+
             if (r.timeSlot) {
                 const timeMatch = r.timeSlot.match(/(\d{1,2}:\d{2})\s*〜\s*(\d{1,2}:\d{2})/);
                 if (timeMatch) {
                     startTime = timeMatch[1];
-                    endTime = timeMatch[2];
+                    // 時間範囲がある場合は、endTimeが空ならその終了時刻を使う
+                    if (!endTime) endTime = timeMatch[2];
                 } else {
                     // 時間範囲でない場合は開始時刻のみ
                     startTime = r.timeSlot;
@@ -1542,7 +1586,8 @@ function downloadExcel() {
     } else {
         // 通常フォーマット
         headers = ['実施日', '曜日', '備考'];
-        if (showSlot && !mergeStartTime) headers.splice(2, 0, '時間');
+        if (showSlot && !mergeStartTime) headers.splice(2, 0, '開始時刻');
+        if (showEndTime) headers.splice(showSlot && !mergeStartTime ? 3 : 2, 0, '終了時刻');
         if (showDeadline) headers.push(`締め切り日（${nBefore}営業日前）`, '締め切り曜日');
 
         dataRows = currentData.map(r => {
@@ -1554,6 +1599,7 @@ function downloadExcel() {
 
             const row = [dateDisplay, r.dayOfWeek, warn];
             if (showSlot && !mergeStartTime) row.splice(2, 0, r.timeSlot);
+            if (showEndTime) row.splice(showSlot && !mergeStartTime ? 3 : 2, 0, r.endTime || '');
 
             if (showDeadline) {
                 const deadlineDisplay = mergeDeadlineTime && r.deadline
@@ -1634,6 +1680,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const deadlineTimeInput = document.getElementById('deadlineTime');
     if (deadlineTimeInput) {
         deadlineTimeInput.addEventListener('change', updateTableDisplay);
+    }
+
+    // 終了時刻出力トグルの変更を監視
+    const outputEndTimeToggle = document.getElementById('outputEndTime');
+    if (outputEndTimeToggle) {
+        outputEndTimeToggle.addEventListener('change', (e) => {
+            // 所要時間フィールドの表示/非表示を切り替え
+            const endTimeSection = document.getElementById('endTimeSection');
+            if (endTimeSection) {
+                endTimeSection.classList.toggle('active', e.target.checked);
+            }
+        });
     }
 });
 
